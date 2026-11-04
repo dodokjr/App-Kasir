@@ -1,0 +1,169 @@
+"use client";
+import { useEffect, useState } from "react";
+import Shell from "@/components/Shell";
+import { useTheme, type Theme } from "@/components/ThemeToggle";
+import Receipt, { KitchenTicket } from "@/components/Receipt";
+import { DEFAULT_SETTINGS, sampleFor, type ReceiptSettings } from "@/lib/receiptSettings";
+import { BUSINESS_TYPES, GROUP_LABEL, PAYMENT_PRESETS, type BusinessType, type PayGroup, type PayMethod } from "@/lib/business";
+import { api } from "@/lib/client";
+import type { Me } from "@/lib/types";
+
+const THEMES: [Theme, string][] = [["light", "Terang"], ["dark", "Gelap"], ["system", "Ikuti perangkat"]];
+
+function Check({ id, label, v, on, disabled }: { id: string; label: string; v: boolean; on: (b: boolean) => void; disabled: boolean }) {
+  return <label htmlFor={id} className="flex items-center gap-2 text-sm"><input id={id} type="checkbox" disabled={disabled} checked={v} onChange={(e) => on(e.target.checked)} />{label}</label>;
+}
+
+function BusinessSection({ type, onChange }: { type: BusinessType; onChange: (t: BusinessType) => void }) {
+  const [err, setErr] = useState("");
+  async function pick(t: BusinessType) {
+    if (t === type) return;
+    if (!confirm("Ganti jenis usaha? Tampilan kasir dan struk akan menyesuaikan. Produk dan transaksi lama tidak berubah.")) return;
+    try { await api("/api/store", { method: "PATCH", body: { businessType: t } }); onChange(t); setErr(""); }
+    catch (x) { setErr((x as Error).message); }
+  }
+  return (
+    <section className="card space-y-3">
+      <h2 className="font-semibold">Jenis usaha</h2>
+      <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Jenis usaha">
+        {BUSINESS_TYPES.map((b) => (
+          <button key={b.key} type="button" role="radio" aria-checked={type === b.key} onClick={() => pick(b.key)}
+            className={`rounded-md border p-3 text-left text-sm transition ${type === b.key ? "border-accent bg-accent/10" : "border-line hover:border-accent"}`}>
+            <span className="font-medium">{b.label}</span><span className="mt-0.5 block text-xs text-muted">{b.desc}</span>
+          </button>
+        ))}
+      </div>
+      {err && <p className="text-sm text-danger" role="alert">{err}</p>}
+    </section>
+  );
+}
+
+function PaymentSection({ type }: { type: BusinessType }) {
+  const [list, setList] = useState<PayMethod[]>([]);
+  const [custom, setCustom] = useState({ label: "", group: "lain" as PayGroup });
+  const [err, setErr] = useState("");
+  const load = () => api<PayMethod[]>("/api/payment-methods?all=1").then(setList).catch((x) => setErr((x as Error).message));
+  useEffect(() => { load(); }, []);
+  const run = async (fn: () => Promise<unknown>) => { setErr(""); try { await fn(); await load(); } catch (x) { setErr((x as Error).message); } };
+
+  const have = new Set(list.map((m) => m.key));
+  const suggested = PAYMENT_PRESETS.filter((p) => !have.has(p.key));
+  // Yang cocok dengan jenis usaha ditampilkan lebih dulu
+  suggested.sort((a, b) => Number(!!b.hint?.includes(type)) - Number(!!a.hint?.includes(type)));
+
+  return (
+    <section className="card space-y-4">
+      <div>
+        <h2 className="font-semibold">Metode pembayaran</h2>
+        <p className="text-sm text-muted">Cash dan transfer bank selalu ada. Aktifkan metode lain sesuai kebutuhan toko. Pembayaran non-tunai tidak dihitung sebagai uang di laci saat tutup kasir.</p>
+      </div>
+      <ul className="divide-y divide-line text-sm">
+        {list.map((m) => (
+          <li key={m.id} className="flex items-center gap-3 py-2">
+            <div className="flex-1"><span className="font-medium">{m.label}</span> <span className="text-xs text-muted">{GROUP_LABEL[m.group]}{m.locked ? " · utama" : ""}</span></div>
+            {m.locked ? <span className="text-xs text-muted">Selalu aktif</span> : (
+              <button className="btn-ghost" onClick={() => run(() => api("/api/payment-methods", { method: "PATCH", body: { id: m.id, active: !m.active } }))}>
+                {m.active ? "Nonaktifkan" : "Aktifkan"}
+              </button>
+            )}
+            <span className={`w-14 text-right text-xs ${m.active ? "" : "text-muted"}`}>{m.active ? "Aktif" : "Mati"}</span>
+          </li>
+        ))}
+      </ul>
+      {suggested.length > 0 && (
+        <div>
+          <div className="label">Tambah dari daftar</div>
+          <div className="flex flex-wrap gap-2">
+            {suggested.map((p) => (
+              <button key={p.key} className="btn-ghost" onClick={() => run(() => api("/api/payment-methods", { method: "POST", body: { presetKey: p.key } }))}>
+                + {p.label}{p.hint?.includes(type) ? " ★" : ""}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-muted">★ cocok untuk jenis usaha Anda.</p>
+        </div>
+      )}
+      <form className="grid gap-3 sm:grid-cols-[1fr_180px_auto]" onSubmit={(e) => { e.preventDefault(); run(async () => { await api("/api/payment-methods", { method: "POST", body: custom }); setCustom({ ...custom, label: "" }); }); }}>
+        <div><label className="label" htmlFor="pm-l">Metode lain (nama bebas)</label><input id="pm-l" required maxLength={30} className="input" placeholder="Contoh: OVO, Dana, Kasbon" value={custom.label} onChange={(e) => setCustom({ ...custom, label: e.target.value })} /></div>
+        <div><label className="label" htmlFor="pm-g">Jenis</label>
+          <select id="pm-g" className="input" value={custom.group} onChange={(e) => setCustom({ ...custom, group: e.target.value as PayGroup })}>
+            {(["bank", "qris", "online", "kurir", "lain"] as PayGroup[]).map((g) => <option key={g} value={g}>{GROUP_LABEL[g]}</option>)}
+          </select></div>
+        <div className="flex items-end"><button className="btn-primary w-full">Tambah</button></div>
+      </form>
+      {err && <p className="text-sm text-danger" role="alert">{err}</p>}
+    </section>
+  );
+}
+
+function Settings({ me }: { me: Me }) {
+  const owner = me.session.role === "kepala_toko";
+  const [f, setF] = useState<ReceiptSettings>(DEFAULT_SETTINGS);
+  const [biz, setBiz] = useState<BusinessType>(me.store?.businessType ?? "retail");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const { theme, set } = useTheme();
+  useEffect(() => { api<ReceiptSettings>("/api/receipt-settings").then(setF).catch((x) => setErr((x as Error).message)); }, []);
+  const sample = sampleFor(biz);
+  const up = <K extends keyof ReceiptSettings>(k: K, v: ReceiptSettings[K]) => { setF((p) => ({ ...p, [k]: v })); setMsg(""); };
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setErr(""); setMsg("");
+    try { await api("/api/receipt-settings", { method: "POST", body: f }); setMsg("Pengaturan struk tersimpan."); }
+    catch (x) { setErr((x as Error).message); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="card space-y-3">
+        <h2 className="font-semibold">Tampilan</h2>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tema">
+          {THEMES.map(([k, l]) => <button key={k} role="radio" aria-checked={theme === k} className={theme === k ? "btn-primary" : "btn-ghost"} onClick={() => set(k)}>{l}</button>)}
+        </div>
+        <p className="text-sm text-muted">Pilihan tema disimpan di browser ini.</p>
+      </section>
+
+      {owner && <BusinessSection type={biz} onChange={setBiz} />}
+      {owner && <PaymentSection type={biz} />}
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <form onSubmit={save} className="card space-y-4">
+          <h2 className="font-semibold">Struk</h2>
+          {!owner && <p className="text-sm text-muted">Hanya kepala toko yang dapat mengubah pengaturan struk. Anda bisa melihat pratinjaunya di samping.</p>}
+          <fieldset disabled={!owner} className="space-y-4">
+            <div><label className="label" htmlFor="sn">Nama toko di struk</label><input id="sn" required maxLength={60} className="input" value={f.storeName} onChange={(e) => up("storeName", e.target.value)} /></div>
+            <div><label className="label" htmlFor="ad">Alamat</label><textarea id="ad" rows={2} maxLength={160} className="input" value={f.address} onChange={(e) => up("address", e.target.value)} /></div>
+            <div><label className="label" htmlFor="ph">Telepon / WhatsApp</label><input id="ph" maxLength={30} className="input" value={f.phone} onChange={(e) => up("phone", e.target.value)} /></div>
+            <div><label className="label" htmlFor="hd">Teks di atas (opsional)</label><input id="hd" maxLength={160} className="input" placeholder="Contoh: Buka setiap hari 08.00–21.00" value={f.header} onChange={(e) => up("header", e.target.value)} /></div>
+            <div><label className="label" htmlFor="ft">Teks penutup</label><textarea id="ft" rows={2} maxLength={160} className="input" placeholder="Contoh: Barang yang sudah dibeli tidak dapat ditukar" value={f.footer} onChange={(e) => up("footer", e.target.value)} /></div>
+            <div><label className="label" htmlFor="pp">Lebar kertas</label>
+              <select id="pp" className="input" value={f.paper} onChange={(e) => up("paper", e.target.value as "58" | "80")}><option value="58">58 mm</option><option value="80">80 mm</option></select></div>
+            <div className="space-y-2">
+              <Check id="c1" label="Tampilkan nomor invoice" v={f.showInvoice} on={(b) => up("showInvoice", b)} disabled={!owner} />
+              <Check id="c2" label="Tampilkan nama kasir" v={f.showCashier} on={(b) => up("showCashier", b)} disabled={!owner} />
+              <Check id="c3" label="Tampilkan uang diterima dan kembalian" v={f.showPayment} on={(b) => up("showPayment", b)} disabled={!owner} />
+              <Check id="c4" label="Buka dialog cetak otomatis setelah pembayaran" v={f.autoPrint} on={(b) => up("autoPrint", b)} disabled={!owner} />
+            </div>
+          </fieldset>
+          {err && <p className="text-sm text-danger" role="alert">{err}</p>}
+          {msg && <p className="text-sm" role="status">{msg}</p>}
+          {owner && <button className="btn-primary">Simpan pengaturan struk</button>}
+        </form>
+
+        <aside className="space-y-3">
+          <h2 className="font-semibold">Pratinjau</h2>
+          <div className="overflow-x-auto rounded-lg border border-line p-3"><div className="print-area"><Receipt r={sample} settings={f} /></div></div>
+          {biz === "fnb" && (
+            <>
+              <h3 className="text-sm font-medium">Struk dapur</h3>
+              <div className="overflow-x-auto rounded-lg border border-line p-3"><div className="print-area"><KitchenTicket r={sample} settings={f} /></div></div>
+            </>
+          )}
+          <button type="button" className="btn-ghost" onClick={() => { document.body.dataset.print = "both"; window.addEventListener("afterprint", () => { delete document.body.dataset.print; }, { once: true }); window.print(); }}>Cetak struk contoh</button>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+export default function Pengaturan() { return <Shell>{(me) => <Settings me={me} />}</Shell>; }
