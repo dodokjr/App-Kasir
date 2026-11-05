@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import { useTheme, type Theme } from "@/components/ThemeToggle";
 import Receipt, { KitchenTicket } from "@/components/Receipt";
-import { DEFAULT_SETTINGS, sampleFor, type ReceiptSettings } from "@/lib/receiptSettings";
-import { BUSINESS_TYPES, GROUP_LABEL, PAYMENT_PRESETS, type BusinessType, type PayGroup, type PayMethod } from "@/lib/business";
-import { api } from "@/lib/client";
+import { DEFAULT_SETTINGS, sampleFor, withTax, type ReceiptSettings } from "@/lib/receiptSettings";
+import { BUSINESS_TYPES, DEFAULT_TAX, GROUP_LABEL, PAYMENT_PRESETS, TAX_PRESETS, calcTax, fmtRate, normRate, type BusinessType, type PayGroup, type PayMethod, type TaxConfig } from "@/lib/business";
+import { api, rp } from "@/lib/client";
 import type { Me } from "@/lib/types";
 
 const THEMES: [Theme, string][] = [["light", "Terang"], ["dark", "Gelap"], ["system", "Ikuti perangkat"]];
@@ -35,6 +35,53 @@ function BusinessSection({ type, onChange }: { type: BusinessType; onChange: (t:
       </div>
       {err && <p className="text-sm text-danger" role="alert">{err}</p>}
     </section>
+  );
+}
+
+function TaxSection({ tax, onSaved }: { tax: TaxConfig; onSaved: (t: TaxConfig) => void }) {
+  const [enabled, setEnabled] = useState(tax.enabled);
+  const [rate, setRate] = useState(fmtRate(tax.rate));
+  const [mode, setMode] = useState(tax.mode);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  useEffect(() => { setEnabled(tax.enabled); setRate(fmtRate(tax.rate)); setMode(tax.mode); }, [tax]);
+
+  const r = normRate(rate);
+  const demo = calcTax(100000, { enabled: true, rate: isNaN(r) ? 0 : r, mode });
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setErr(""); setMsg("");
+    if (isNaN(r)) { setErr("Tarif PPN harus antara 0 dan 100"); return; }
+    const t: TaxConfig = { enabled, rate: r, mode };
+    try { await api("/api/store", { method: "PATCH", body: { tax: t } }); onSaved(t); setMsg("Pengaturan PPN tersimpan. Berlaku untuk transaksi berikutnya."); }
+    catch (x) { setErr((x as Error).message); }
+  }
+  return (
+    <form onSubmit={save} className="card space-y-4">
+      <div>
+        <h2 className="font-semibold">PPN</h2>
+        <p className="text-sm text-muted">Kepala toko yang menentukan apakah toko memungut PPN, berapa tarifnya, dan cara menghitungnya. Jika dinonaktifkan, kasir dan struk tidak menampilkan PPN. Transaksi lama tidak berubah.</p>
+      </div>
+      <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setMsg(""); }} />Aktifkan PPN di kasir dan struk</label>
+      <fieldset disabled={!enabled} className="space-y-4 disabled:opacity-50">
+        <div className="max-w-[160px]"><label className="label" htmlFor="ppn-rate">Tarif PPN (%)</label>
+          <input id="ppn-rate" inputMode="decimal" className="input font-mono" value={rate} onChange={(e) => { setRate(e.target.value.replace(/[^\d.,]/g, "")); setMsg(""); }} />
+          <div className="mt-2 flex gap-2">{TAX_PRESETS.map((n) => <button key={n} type="button" className={r === n ? "btn-primary" : "btn-ghost"} onClick={() => { setRate(fmtRate(n)); setMsg(""); }}>{n}%</button>)}</div></div>
+        <div role="radiogroup" aria-label="Cara menghitung PPN" className="grid gap-2 sm:grid-cols-2">
+          {([["exclusive", "Ditambahkan di atas harga", "Harga produk belum termasuk PPN. PPN ditambahkan saat bayar."], ["inclusive", "Sudah termasuk di harga", "Harga produk sudah termasuk PPN. Total tidak berubah, struk menampilkan PPN di dalamnya."]] as const).map(([k, t, d]) => (
+            <button key={k} type="button" role="radio" aria-checked={mode === k} onClick={() => { setMode(k); setMsg(""); }}
+              className={`rounded-md border p-3 text-left text-sm transition ${mode === k ? "border-accent bg-accent/10" : "border-line hover:border-accent"}`}>
+              <span className="font-medium">{t}</span><span className="mt-0.5 block text-xs text-muted">{d}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-muted">Contoh belanja {rp(100000)}: {mode === "exclusive" ? `PPN ${rp(demo.tax)}, customer bayar ${rp(demo.total)}.` : `customer bayar ${rp(demo.total)}, di dalamnya sudah ada PPN ${rp(demo.tax)}.`}</p>
+      </fieldset>
+      <p className="text-xs text-muted">Aplikasi ini hanya menghitung. Apakah toko Anda wajib memungut PPN dan berapa tarif yang berlaku, tanyakan ke konsultan pajak atau kantor pajak.</p>
+      {err && <p className="text-sm text-danger" role="alert">{err}</p>}
+      {msg && <p className="text-sm" role="status">{msg}</p>}
+      <button className="btn-primary">Simpan pengaturan PPN</button>
+    </form>
   );
 }
 
@@ -100,11 +147,13 @@ function Settings({ me }: { me: Me }) {
   const owner = me.session.role === "kepala_toko";
   const [f, setF] = useState<ReceiptSettings>(DEFAULT_SETTINGS);
   const [biz, setBiz] = useState<BusinessType>(me.store?.businessType ?? "retail");
+  const [tax, setTax] = useState<TaxConfig>(DEFAULT_TAX);
+  useEffect(() => { api<{ tax: TaxConfig }>("/api/store").then((r) => setTax(r.tax)).catch(() => {}); }, []);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const { theme, set } = useTheme();
   useEffect(() => { api<ReceiptSettings>("/api/receipt-settings").then(setF).catch((x) => setErr((x as Error).message)); }, []);
-  const sample = sampleFor(biz);
+  const sample = withTax(sampleFor(biz), tax);
   const up = <K extends keyof ReceiptSettings>(k: K, v: ReceiptSettings[K]) => { setF((p) => ({ ...p, [k]: v })); setMsg(""); };
 
   async function save(e: React.FormEvent) {
@@ -124,6 +173,7 @@ function Settings({ me }: { me: Me }) {
       </section>
 
       {owner && <BusinessSection type={biz} onChange={setBiz} />}
+      {owner && <TaxSection tax={tax} onSaved={setTax} />}
       {owner && <PaymentSection type={biz} />}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">

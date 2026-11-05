@@ -10,7 +10,7 @@ const config: Config = {
     extend: {
       colors: {
         ink: c("ink"), paper: c("paper"), surface: c("surface"), line: c("line"), muted: c("muted"), danger: c("danger"),
-        link: c("link"),
+        link: c("link"), sun: c("sun"), "sun-ink": c("sun-ink"),
         accent: { DEFAULT: c("accent"), dark: c("accent-dark") },
       },
       fontFamily: { sans: ["var(--font-sans)", "system-ui", "sans-serif"], mono: ["var(--font-mono)", "monospace"] },

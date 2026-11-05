@@ -3,28 +3,52 @@
 @tailwind utilities;
 
 @layer base {
+  /* Hijau daun (utama), kunyit (sorotan), kertas dingin. Semua pasangan teks/latar lolos kontras 4.5:1 */
   :root {
-    --ink: 22 33 43; --paper: 241 244 245; --surface: 255 255 255; --line: 217 224 227; --muted: 92 107 117;
-    --danger: 179 64 45; --accent: 11 106 136; --accent-dark: 8 84 112; --link: 11 106 136;
+    --ink: 18 32 27; --paper: 245 247 244; --surface: 255 255 255; --line: 214 222 216; --muted: 84 100 92;
+    --danger: 190 56 38; --accent: 11 110 79; --accent-dark: 8 88 63; --link: 11 110 79;
+    --sun: 242 177 52; --sun-ink: 74 49 0;
     color-scheme: light;
   }
   .dark {
-    --ink: 230 233 239; --paper: 14 17 22; --surface: 22 27 34; --line: 43 51 64; --muted: 154 165 181;
-    --danger: 255 138 138; --accent: 14 116 144; --accent-dark: 21 94 117; --link: 103 197 226;
+    --ink: 232 238 234; --paper: 13 20 17; --surface: 20 29 25; --line: 40 54 47; --muted: 156 172 163;
+    --danger: 255 140 125; --accent: 24 132 96; --accent-dark: 17 110 79; --link: 118 214 168;
+    --sun: 245 190 80; --sun-ink: 74 49 0;
     color-scheme: dark;
   }
-  body { @apply bg-paper text-ink antialiased; }
+  html { scroll-padding-top: 5rem; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  body { @apply bg-paper text-ink antialiased; font-size: 16px; line-height: 1.6; }
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+  .dark :focus-visible { outline-color: rgb(var(--link)); }
 }
 @layer components {
-  .card { @apply rounded-lg border border-line bg-surface p-4; }
-  .input { @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20; }
-  .btn { @apply inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent; }
+  .card { @apply rounded-xl border border-line bg-surface p-4; }
+  .input { @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20; }
+  .btn { @apply inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition disabled:opacity-50; }
   .btn-primary { @apply btn bg-accent text-white hover:bg-accent-dark; }
   .btn-ghost { @apply btn border border-line bg-surface hover:bg-paper; }
+  .btn-lg { @apply rounded-xl px-6 py-3.5 text-base; }
   .label { @apply mb-1 block text-xs font-medium text-muted; }
   .th { @apply px-3 py-2 text-left text-xs font-medium text-muted; }
   .td { @apply px-3 py-2 text-sm; }
+
+  /* Halaman publik: label dan isian lebih besar agar mudah dibaca dan disentuh */
+  .field-label { @apply mb-1.5 block text-sm font-semibold; }
+  .field { @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-base outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/15; }
+
+  /* FAQ: panah berputar saat dibuka */
+  .faq summary { @apply flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-lg font-semibold; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: ""; flex: none; width: 10px; height: 10px; border-right: 2.5px solid rgb(var(--accent)); border-bottom: 2.5px solid rgb(var(--accent)); transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+  .dark .faq summary::after { border-color: rgb(var(--link)); }
+  .faq[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
 }
+
+/* Satu gerakan di beranda: struk "tercetak" keluar saat dimuat atau saat jenis usaha diganti */
+@keyframes print-out { from { clip-path: inset(0 0 100% 0); transform: translateY(-14px); } to { clip-path: inset(0 0 0 0); transform: translateY(0); } }
+.print-in { animation: print-out .75s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .print-in { animation: none; } }
 
 /* Cetak struk thermal: hanya struk yang dipilih yang tampil. Lebar kertas (58/80mm) diatur komponen Receipt.
    body[data-print] = "customer" | "kitchen" | "both" diatur oleh ReceiptModal sebelum window.print() */
@@ -41,17 +65,27 @@
 }
 
 @layer components {
-  .doc h1 { @apply mb-3 text-2xl font-semibold; }
-  .doc h2 { @apply mb-2 mt-8 text-lg font-semibold; }
-  .doc h3 { @apply mb-1 mt-5 font-medium; }
-  .doc p { @apply my-3 max-w-[68ch] leading-7; }
-  .doc ul { @apply my-3 max-w-[68ch] list-disc space-y-1 pl-5 leading-7; }
-  .doc ol { @apply my-3 max-w-[68ch] list-decimal space-y-2 pl-5 leading-7; }
-  .doc a { @apply font-medium text-link underline underline-offset-2; }
-  .doc code { @apply rounded bg-paper px-1.5 py-0.5 font-mono text-[13px]; }
-  .doc pre { @apply my-3 overflow-x-auto rounded-md border border-line bg-surface p-3 font-mono text-[13px] leading-6; }
-  .doc table { @apply my-4 w-full border-collapse text-sm; }
-  .doc th { @apply border-b border-line px-3 py-2 text-left font-medium; }
-  .doc td { @apply border-b border-line px-3 py-2 align-top; }
+  .doc { font-size: 1.0625rem; }
+  .doc h1 { @apply mb-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl; }
+  .doc h2 { @apply mb-2 mt-12 scroll-mt-24 text-2xl font-bold tracking-tight; }
+  .doc h3 { @apply mb-1 mt-7 text-lg font-semibold; }
+  .doc p { @apply my-4 max-w-[68ch] leading-8; }
+  .doc ul { @apply my-4 max-w-[68ch] list-disc space-y-2 pl-6 leading-8 marker:text-accent; }
+  .doc ol { @apply my-4 max-w-[68ch] list-decimal space-y-3 pl-6 leading-8 marker:font-bold marker:text-accent; }
+  .doc a { @apply font-semibold text-link underline decoration-2 underline-offset-4; }
+  .doc code { @apply rounded-md bg-accent/10 px-1.5 py-0.5 font-mono text-[0.85em]; }
+  .doc pre { @apply my-4 overflow-x-auto rounded-xl border border-line bg-surface p-4 font-mono text-[13px] leading-6; }
+  .doc table { @apply my-6 block w-full overflow-x-auto border-collapse text-[15px]; }
+  .doc th { @apply whitespace-nowrap border-b-2 border-line px-3 py-2.5 text-left font-semibold; }
+  .doc td { @apply border-b border-line px-3 py-3 align-top leading-7; }
+  /* Kotak catatan: tulis sebagai <blockquote> di halaman panduan */
+  .doc blockquote { @apply my-6 max-w-[68ch] rounded-xl border-l-4 border-sun bg-sun/15 px-5 py-1 not-italic; }
+  .doc blockquote p { @apply my-3; }
+  /* Kartu pilihan cepat di halaman awal panduan */
+  .doc .quick { @apply my-6 grid max-w-none list-none gap-3 p-0 sm:grid-cols-2; }
+  .doc .quick > li { @apply !m-0 p-0; }
+  .doc .quick a { @apply block h-full rounded-xl border border-line bg-surface p-4 no-underline transition hover:border-accent hover:shadow-sm; }
+  .doc .quick strong { @apply block text-base; }
+  .doc .quick span { @apply mt-1 block text-sm font-normal leading-6 text-muted; }
   .receipt-edge { padding-bottom: 28px; -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
 }

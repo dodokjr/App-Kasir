@@ -16,7 +16,7 @@ export const POST = handle(async (req) => {
   if (!isBusinessType(b.businessType)) throw new HttpError(400, "Pilih jenis usaha toko Anda");
   if (!storeName || !street || !name || !email) throw new HttpError(400, "Lengkapi semua data");
   if (password.length < 6) throw new HttpError(400, "Password minimal 6 karakter");
-  if ((await all("users")).some((u) => u.email === email)) throw new HttpError(409, "Email sudah terdaftar");
+  if ((await all("users", { fresh: true })).some((u) => u.email === email)) throw new HttpError(409, "Email sudah terdaftar");
 
   const storeId = uid(), branchId = uid(), userId = uid();
   await add("stores", { id: storeId, name: storeName, active: "TRUE", createdAt: now(), businessType: b.businessType });

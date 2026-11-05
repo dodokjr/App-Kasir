@@ -6,9 +6,19 @@ export default function Memulai() {
       <h1>Memulai</h1>
       <p>Panduan ini menjelaskan cara memakai Kasir Toko dari mendaftarkan toko sampai mencetak struk pertama.</p>
 
-      <h2>1. Daftarkan toko</h2>
+      <h2 className="!mt-8">Anda ingin apa?</h2>
+      <ul className="quick">
+        <li><Link href="#daftar"><strong>Saya baru mendaftarkan toko</strong><span>Mulai dari langkah 1 di bawah.</span></Link></li>
+        <li><Link href="/docs/tutup-kasir"><strong>Saya kasir</strong><span>Cara membuka kasir, melayani pembeli, dan menutup kasir.</span></Link></li>
+        <li><Link href="/docs/peran"><strong>Saya kepala toko atau kepala cabang</strong><span>Siapa boleh melakukan apa, dan cara menambah tim.</span></Link></li>
+        <li><Link href="/docs/jenis-usaha"><strong>Saya ingin mengatur PPN dan pembayaran</strong><span>Jenis usaha, metode pembayaran, PPN, dan pantau kasir.</span></Link></li>
+        <li><Link href="/docs/instalasi"><strong>Saya yang memasang aplikasi</strong><span>Menyiapkan Google Sheets dan menjalankan aplikasi.</span></Link></li>
+      </ul>
+
+      <h2 id="daftar">1. Daftarkan toko</h2>
       <ol>
         <li>Buka halaman <Link href="/register">Daftarkan toko</Link>.</li>
+        <li>Pilih jenis usaha: makanan dan minuman, toko barang, sembako, atau lainnya.</li>
         <li>Isi nama toko, nama cabang pertama (kosongkan untuk memakai nama &quot;Pusat&quot;), dan nama jalan cabang.</li>
         <li>Isi nama, email, dan password untuk akun kepala toko. Password minimal 6 karakter.</li>
       </ol>

@@ -1,6 +1,6 @@
 import type { ReceiptData } from "./types";
 import { DEFAULT_SETTINGS, type ReceiptSettings } from "./receiptSettings";
-import { fmtQty, isCash, orderTypeLabel } from "./business";
+import { fmtQty, fmtRate, isCash, orderTypeLabel } from "./business";
 
 const rp = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const when = (iso: string) => new Date(iso).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" });
@@ -66,7 +66,9 @@ export async function downloadReceiptPdf(r: ReceiptData, s: ReceiptSettings = DE
       t.lr(`${fmtQty(i.qty)} ${i.unit === "pcs" ? "x" : i.unit + " x"} ${rp(i.price)}`, rp(i.subtotal));
     });
     t.rule();
+    if (r.taxAmount > 0 && r.taxMode === "exclusive") { t.lr("Subtotal", rp(r.subtotal)); t.lr(`PPN ${fmtRate(r.taxRate)}%`, rp(r.taxAmount)); }
     t.lr("Total", rp(r.total), true);
+    if (r.taxAmount > 0 && r.taxMode === "inclusive") t.lr(`Termasuk PPN ${fmtRate(r.taxRate)}%`, rp(r.taxAmount));
     t.lr("Pembayaran", r.paymentLabel);
     if (r.paymentRef) t.lr("Ref", r.paymentRef);
     if (s.showPayment && isCash(r.paymentKey)) { t.lr("Bayar", rp(r.paid)); t.lr("Kembali", rp(r.change)); }

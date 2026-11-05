@@ -1,60 +1,59 @@
-"use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { api } from "@/lib/client";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/business";
+import type { Metadata } from "next";
+import LegalLayout from "@/components/LegalLayout";
+import { SITE } from "@/lib/site";
 
-export default function Register() {
-  const router = useRouter();
-  const [f, setF] = useState({ storeName: "", branchName: "", street: "", name: "", email: "", password: "" });
-  const [biz, setBiz] = useState<BusinessType | "">("");
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+export const metadata: Metadata = { title: "Kebijakan Privasi | Kasir Toko" };
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); setErr("");
-    if (!biz) { setErr("Pilih jenis usaha toko Anda"); return; }
-    setBusy(true);
-    try { await api("/api/auth/register", { method: "POST", body: { ...f, businessType: biz } }); router.replace("/dashboard"); }
-    catch (x) { setErr((x as Error).message); setBusy(false); }
-  }
+export default function Privasi() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={submit} className="card w-full max-w-md space-y-4 p-6">
-        <h1 className="text-xl font-semibold">Daftarkan toko baru</h1>
-        <fieldset className="space-y-2">
-          <legend className="mb-2 text-sm font-medium">Jenis usaha</legend>
-          <div className="grid gap-2" role="radiogroup" aria-label="Jenis usaha">
-            {BUSINESS_TYPES.map((b) => (
-              <label key={b.key} className={`cursor-pointer rounded-md border p-3 text-sm transition ${biz === b.key ? "border-accent bg-accent/10" : "border-line hover:border-accent"}`}>
-                <input type="radio" name="biz" className="sr-only" checked={biz === b.key} onChange={() => setBiz(b.key)} />
-                <span className="font-medium">{b.label}</span>
-                <span className="mt-0.5 block text-xs text-muted">{b.desc}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset className="space-y-3">
-          <legend className="mb-2 text-sm font-medium">Data toko</legend>
-          <div><label className="label" htmlFor="sn">Nama toko</label><input id="sn" required className="input" value={f.storeName} onChange={set("storeName")} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label" htmlFor="bn">Nama cabang</label><input id="bn" placeholder="Pusat" className="input" value={f.branchName} onChange={set("branchName")} /></div>
-            <div><label className="label" htmlFor="st">Nama jalan</label><input id="st" required className="input" value={f.street} onChange={set("street")} /></div>
-          </div>
-        </fieldset>
-        <fieldset className="space-y-3">
-          <legend className="mb-2 text-sm font-medium">Akun kepala toko</legend>
-          <div><label className="label" htmlFor="nm">Nama lengkap</label><input id="nm" required className="input" value={f.name} onChange={set("name")} /></div>
-          <div><label className="label" htmlFor="em">Email</label><input id="em" type="email" required className="input" value={f.email} onChange={set("email")} /></div>
-          <div><label className="label" htmlFor="pw">Password (min. 6 karakter)</label><input id="pw" type="password" required minLength={6} className="input" value={f.password} onChange={set("password")} /></div>
-        </fieldset>
-        {err && <p className="text-sm text-danger" role="alert">{err}</p>}
-        <button className="btn-primary w-full" disabled={busy}>{busy ? "Mendaftar…" : "Daftarkan toko"}</button>
-        <p className="text-center text-xs text-muted"><Link href="/" className="underline underline-offset-2">Kembali ke beranda</Link></p>
-        <p className="text-center text-sm text-muted">Sudah punya akun? <Link href="/login" className="font-medium text-link">Masuk</Link></p>
-      </form>
-    </div>
+    <LegalLayout
+      title="Kebijakan Privasi"
+      intro={<>Kebijakan ini menjelaskan data apa yang dikumpulkan {SITE.name}, untuk apa dipakai, dan bagaimana Anda bisa mengendalikannya. Layanan ini dikelola oleh {SITE.operator}.</>}
+      summary={[
+        "Kami menyimpan data akun, toko, dan penjualan Anda supaya aplikasi bisa berjalan.",
+        "Kami tidak menjual data Anda dan tidak memakainya untuk iklan.",
+        "Password disimpan dalam bentuk acak (hash), bukan teks asli.",
+        "Anda bisa meminta melihat, memperbaiki, atau menghapus data lewat halaman Kontak.",
+      ]}
+      sections={[
+        { id: "data-yang-dikumpulkan", title: "Data yang kami kumpulkan", body: (
+          <>
+            <ul>
+              <li><strong>Data akun:</strong> nama, alamat email, peran, dan password. Password disimpan hanya dalam bentuk hash (bcrypt), bukan teks asli.</li>
+              <li><strong>Data toko:</strong> nama toko, jenis usaha, nama cabang, dan nama jalan cabang.</li>
+              <li><strong>Data usaha:</strong> produk, satuan, harga, stok, transaksi beserta nama kasir, waktu, metode pembayaran, nomor referensi pembayaran yang diisi kasir, PPN, dan jumlah pembayaran, catatan buka dan tutup kasir (modal awal, uang yang dihitung, selisih, dan catatan), pengeluaran toko, serta pengaturan struk dan PPN (nama, alamat, telepon toko, tarif).</li>
+              <li><strong>Data pesanan (toko F&amp;B):</strong> nomor meja, nomor pesanan, nama customer, dan catatan menu, jika diisi oleh kasir.</li>
+              <li><strong>Status aktivitas akun:</strong> waktu terakhir akun terhubung dan halaman aplikasi yang sedang dibuka, supaya kepala toko dan kepala cabang bisa melihat kasir online atau offline.</li>
+              <li><strong>Pesan kontak:</strong> nama, email, subjek, dan isi pesan yang Anda kirim lewat halaman Kontak.</li>
+            </ul>
+            <p>Kami tidak meminta data pembeli. Nama customer di toko F&amp;B bersifat opsional untuk menandai pesanan, dan sebaiknya tidak diisi data yang sensitif. Struk berisi nama toko, cabang, kasir, dan rincian belanja.</p>
+          </>
+        ) },
+        { id: "cara-data-dipakai", title: "Cara data dipakai", body: (
+          <p>Data dipakai untuk menjalankan layanan: memverifikasi login, membatasi akses sesuai peran, menghitung stok, transaksi, dan PPN, membuat struk dan laporan, menampilkan status kasir, dan membalas pesan Anda. Kami tidak memakai data Anda untuk iklan.</p>
+        ) },
+        { id: "tempat-penyimpanan", title: "Tempat penyimpanan", body: (
+          <p>Data disimpan di Google Sheets milik pengelola layanan dan diakses lewat Google Sheets API. Karena itu data juga tunduk pada kebijakan privasi Google sebagai penyedia infrastruktur penyimpanan.</p>
+        ) },
+        { id: "cookie", title: "Cookie dan penyimpanan di browser", body: (
+          <p>Kami memakai satu cookie bernama <code>sid</code> untuk menjaga Anda tetap login. Cookie ini bersifat httpOnly, berlaku 12 jam, dan dihapus saat Anda keluar. Kami juga menyimpan dua preferensi di penyimpanan lokal browser Anda: cabang yang terakhir dipilih (<code>branch</code>) dan tema terang atau gelap (<code>theme</code>). Keduanya hanya untuk kenyamanan tampilan, tidak dikirim ke server, dan bisa dihapus lewat pengaturan browser. Kami tidak memakai cookie iklan atau alat pelacak pihak ketiga.</p>
+        ) },
+        { id: "berbagi-data", title: "Berbagi data", body: (
+          <p>Kami tidak menjual data Anda. Data bisa dibuka kepada pengelola layanan dan pengembang yang menjalankan sistem, kepada penyedia infrastruktur seperti Google, atau jika diwajibkan oleh hukum yang berlaku. Dalam satu toko, data dibagikan antar akun sesuai peran, misalnya kepala toko dapat melihat akun, transaksi, dan keuangan seluruh cabangnya, sedangkan kasir hanya melihat laporan kasirnya sendiri.</p>
+        ) },
+        { id: "keamanan", title: "Keamanan", body: (
+          <p>Kami menyimpan password dalam bentuk hash, memakai sesi login terenkripsi dengan masa berlaku terbatas, dan membatasi akses data sesuai peran. Tidak ada sistem yang sepenuhnya bebas risiko, jadi gunakan password yang kuat dan jangan membagikannya.</p>
+        ) },
+        { id: "penyimpanan-dan-penghapusan", title: "Penyimpanan dan penghapusan", body: (
+          <p>Data disimpan selama akun atau toko aktif. Anda dapat meminta penghapusan akun atau data toko lewat <a href="/kontak">halaman Kontak</a>. Data transaksi, laporan kasir, dan pengeluaran dapat kami simpan lebih lama bila diperlukan untuk kewajiban hukum atau pembukuan. Pengeluaran yang dibatalkan tetap tersimpan dengan penanda batal agar jejak audit terjaga.</p>
+        ) },
+        { id: "hak-anda", title: "Hak Anda", body: (
+          <p>Sesuai Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi, Anda berhak mengakses, memperbaiki, dan meminta penghapusan data pribadi Anda, serta menarik persetujuan pemrosesan. Kirim permintaan ke {SITE.email}.</p>
+        ) },
+        { id: "anak-anak", title: "Anak-anak", body: <p>Layanan ini ditujukan untuk pelaku usaha dan karyawannya, bukan untuk anak di bawah umur.</p> },
+        { id: "perubahan-kebijakan", title: "Perubahan kebijakan", body: <p>Jika kebijakan ini berubah, tanggal pembaruan di atas akan diganti. Perubahan penting akan diumumkan di halaman ini.</p> },
+        { id: "hubungi-kami", title: "Hubungi kami", body: <p>{SITE.operator}<br />{SITE.address}<br />Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a></p> },
+      ]}
+    />
   );
 }

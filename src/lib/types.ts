@@ -6,6 +6,8 @@ export type ReceiptData = {
   invoice: string; storeName: string; branchName: string; street: string; cashierName: string; createdAt: string;
   items: ReceiptItem[];
   total: number; paid: number; change: number;
+  /** Jumlah barang sebelum PPN (exclusive) atau termasuk PPN (inclusive). Transaksi lama: sama dengan total */
+  subtotal: number; taxAmount: number; taxRate: number; taxMode: string;
   businessType: BusinessType;
   paymentKey: string; paymentLabel: string; paymentRef: string;
   orderType: string; tableNo: string; customerName: string; orderNo: string;

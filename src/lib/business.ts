@@ -39,7 +39,7 @@ export const validQty = (qty: number, step: number) => {
 
 export const ORDER_TYPES = [
   { key: "dine_in", label: "Makan di tempat" },
-  { key: "take_away", label: "Bawa pulang" },
+  { key: "take_away", label: "Bungkus / bawa pulang" },
 ] as const;
 export type OrderType = (typeof ORDER_TYPES)[number]["key"];
 export const orderTypeLabel = (k?: string) => ORDER_TYPES.find((o) => o.key === k)?.label ?? "";
@@ -73,3 +73,44 @@ export type PayMethod = { id: string; key: string; label: string; group: PayGrou
 export const GROUP_LABEL: Record<PayGroup, string> = {
   cash: "Tunai", bank: "Bank", qris: "QRIS", online: "Pesan antar", kurir: "Kurir / paket", lain: "Lainnya",
 };
+
+// ---- PPN (pajak) ----
+// exclusive = PPN ditambahkan di atas harga. inclusive = harga di produk sudah termasuk PPN.
+export type TaxMode = "exclusive" | "inclusive";
+export type TaxConfig = { enabled: boolean; rate: number; mode: TaxMode };
+export const DEFAULT_TAX: TaxConfig = { enabled: false, rate: 12, mode: "exclusive" };
+// Pilihan cepat tarif di Pengaturan (tarif tetap bisa diisi bebas)
+export const TAX_PRESETS = [11, 12];
+
+export const normRate = (v: unknown) => {
+  const n = Math.round(Number(String(v).replace(",", ".")) * 100) / 100;
+  return isFinite(n) && n >= 0 && n <= 100 ? n : NaN;
+};
+// Baca dari baris toko di Sheets. Toko lama (kolom kosong) = PPN nonaktif
+export function parseTax(r?: Record<string, string>): TaxConfig {
+  const rate = normRate(r?.ppnRate || DEFAULT_TAX.rate);
+  return {
+    enabled: r?.ppnEnabled === "TRUE",
+    rate: isNaN(rate) ? DEFAULT_TAX.rate : rate,
+    mode: r?.ppnMode === "inclusive" ? "inclusive" : "exclusive",
+  };
+}
+/** Dipakai sama persis di browser dan server. `total` = jumlah yang dibayar customer */
+export function calcTax(subtotal: number, t: TaxConfig) {
+  if (!t.enabled || !(t.rate > 0)) return { subtotal, tax: 0, total: subtotal };
+  if (t.mode === "inclusive") return { subtotal, tax: Math.round(subtotal - subtotal / (1 + t.rate / 100)), total: subtotal };
+  const tax = Math.round((subtotal * t.rate) / 100);
+  return { subtotal, tax, total: subtotal + tax };
+}
+export const fmtRate = (n: number) => String(n).replace(".", ",");
+
+// ---- Aplikasi pesan antar makanan ----
+// Hanya untuk toko F&B. Pesanannya otomatis dibungkus (tanpa meja) dan tidak muncul di jenis usaha lain
+export const FOOD_APPS = ["shopeefood", "gofood", "grabfood"];
+const FOOD_NAMES = ["shopeefood", "shopee food", "gofood", "go food", "grabfood", "grab food"];
+export const isFoodDelivery = (key?: string) => !!key && FOOD_APPS.includes(key);
+/** Nama bebas yang meniru aplikasi makanan, misalnya "Go-Food" atau "grab food" */
+export const looksLikeFoodApp = (label: string) => FOOD_NAMES.includes(label.toLowerCase().replace(/[^a-z ]/g, "").trim());
+/** Apakah metode ini boleh dipakai di jenis usaha tersebut */
+export const methodAllowed = (biz: BusinessType, key: string, label = "") =>
+  biz === "fnb" || !(isFoodDelivery(key) || looksLikeFoodApp(label));

@@ -18,6 +18,8 @@ export async function buildReceipt(tx: Row): Promise<ReceiptData> {
       unit: i.unit || "pcs", note: i.note || "",
     })),
     total: Number(tx.total), paid: Number(tx.paid), change: Number(tx.change),
+    subtotal: tx.subtotal ? Number(tx.subtotal) : Number(tx.total),
+    taxAmount: Number(tx.taxAmount) || 0, taxRate: Number(tx.taxRate) || 0, taxMode: tx.taxMode || "",
     businessType: normBusiness(store?.businessType),
     // Transaksi lama (sebelum ada metode pembayaran) dianggap tunai
     paymentKey: tx.paymentKey || "cash", paymentLabel: tx.paymentLabel || "Cash", paymentRef: tx.paymentRef || "",

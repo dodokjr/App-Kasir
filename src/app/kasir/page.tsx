@@ -8,8 +8,8 @@ import { useBranch } from "@/lib/useBranch";
 import { api, rp, tgl } from "@/lib/client";
 import { useOnline } from "@/lib/useOnline";
 import {
-  CASH_KEY, GROUP_LABEL, ORDER_TYPES, fmtQty, isCash, lineTotal, parseQty, roundQty, stepOf, unitOf, validQty,
-  type BusinessType, type PayMethod,
+  CASH_KEY, DEFAULT_TAX, GROUP_LABEL, ORDER_TYPES, calcTax, fmtQty, fmtRate, isCash, lineTotal, parseQty, roundQty, stepOf, unitOf, validQty,
+  type BusinessType, type PayMethod, type TaxConfig,
 } from "@/lib/business";
 import type { Me, ReceiptData } from "@/lib/types";
 import type { ShiftOut } from "@/lib/shiftTypes";
@@ -136,6 +136,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
   const branchId = shift.branchId;
   const [products, setProducts] = useState<P[]>([]);
   const [methods, setMethods] = useState<PayMethod[]>([]);
+  const [taxCfg, setTaxCfg] = useState<TaxConfig>(DEFAULT_TAX);
   const [q, setQ] = useState("");
   const [cart, setCart] = useState<Record<string, Line>>({});
   const [method, setMethod] = useState(CASH_KEY);
@@ -149,11 +150,13 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   const load = useCallback(async () => {
-    const [list, pm] = await Promise.all([
+    const [list, pm, st] = await Promise.all([
       api<P[]>(`/api/products?branchId=${branchId}`),
       api<PayMethod[]>("/api/payment-methods"),
+      api<{ tax: TaxConfig }>("/api/store"),
     ]);
     setProducts(list);
+    setTaxCfg(st.tax);
     setMethods(pm);
     setMethod((m) => (pm.some((x) => x.key === m) ? m : CASH_KEY));
     setCart((c) => Object.fromEntries(Object.entries(c).filter(([id]) => list.some((p) => p.id === id))));
@@ -167,7 +170,9 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
     const bad = !validQty(qty, step) ? (step < 1 ? "Kelipatan 0,1 (min. 0,1)" : "Jumlah tidak valid") : qty > stock + 1e-9 ? `Stok hanya ${fmtQty(stock)}` : "";
     return { p, qty: bad ? 0 : qty, text: cart[p.id].q, note: cart[p.id].note, step, bad, sub: bad ? 0 : lineTotal(Number(p.price), qty) };
   });
-  const total = lines.reduce((a, l) => a + l.sub, 0);
+  const subtotal = lines.reduce((a, l) => a + l.sub, 0);
+  // Server menghitung ulang dengan rumus yang sama; ini hanya tampilan
+  const { tax, total } = calcTax(subtotal, taxCfg);
   const cash = isCash(method);
   const change = Number(paid || 0) - total;
   const hasBad = lines.some((l) => l.bad);
@@ -277,7 +282,14 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
               );
             })}
           </ul>
+          {tax > 0 && taxCfg.mode === "exclusive" && (
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="font-mono">{rp(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted">PPN {fmtRate(taxCfg.rate)}%</span><span className="font-mono">{rp(tax)}</span></div>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-semibold"><span>Total</span><span className="font-mono">{rp(total)}</span></div>
+          {tax > 0 && taxCfg.mode === "inclusive" && <div className="flex justify-between text-xs text-muted"><span>Sudah termasuk PPN {fmtRate(taxCfg.rate)}%</span><span className="font-mono">{rp(tax)}</span></div>}
 
           <div>
             <span className="label">Metode pembayaran</span>

@@ -3,7 +3,7 @@ import { all, add, addMany, updateMany, uid, now } from "@/lib/sheets";
 import { buildReceipt } from "@/lib/receipt";
 import { methodsOf } from "@/lib/payments";
 import { dayKey } from "@/lib/shift";
-import { isCash, lineTotal, normBusiness, roundQty, stepOf, validQty, ORDER_TYPES } from "@/lib/business";
+import { calcTax, parseTax, isCash, isFoodDelivery, lineTotal, normBusiness, roundQty, stepOf, validQty, ORDER_TYPES } from "@/lib/business";
 
 export const GET = handle(async (req) => {
   const s = await need();
@@ -29,7 +29,7 @@ export const POST = handle(async (req) => {
   if (!Array.isArray(b.items) || !b.items.length) throw new HttpError(400, "Keranjang kosong");
 
   // Penjualan hanya boleh saat kasir dibuka. Cabang mengikuti cabang yang dipilih saat buka kasir
-  const [shifts, stores, allTx, allProducts] = await Promise.all([all("shifts"), all("stores"), all("transactions"), all("products")]);
+  const [shifts, stores, allTx, allProducts] = await Promise.all([all("shifts", { fresh: true }), all("stores"), all("transactions", { fresh: true }), all("products", { fresh: true })]);
   const shift = shifts.find((x) => x.cashierId === s.uid && x.status === "open");
   if (!shift) throw new HttpError(400, "Kasir belum dibuka. Buka kasir terlebih dulu");
   const branchId = shift.branchId;
@@ -60,10 +60,14 @@ export const POST = handle(async (req) => {
     const price = Number(p.price);
     return { p, qty, unit, price, subtotal: lineTotal(price, qty), note: biz === "fnb" ? clip(i.note, 80) : "" };
   });
-  const total = lines.reduce((a, l) => a + l.subtotal, 0);
+  const subtotal = lines.reduce((a, l) => a + l.subtotal, 0);
+  // Aturan PPN diambil dari server saat transaksi dibuat, lalu disimpan di transaksi agar
+  // mengubah tarif nanti tidak mengubah transaksi lama
+  const taxCfg = parseTax(store);
+  const { tax, total } = calcTax(subtotal, taxCfg);
 
   // Metode pembayaran: hanya yang diaktifkan kepala toko. Cash dan transfer bank selalu ada
-  const methods = await methodsOf(s.storeId);
+  const methods = await methodsOf(s.storeId, false, biz);
   const method = methods.find((m) => m.key === (b.paymentKey || "cash"));
   if (!method) throw new HttpError(400, "Metode pembayaran tidak tersedia. Muat ulang halaman Kasir");
   let paid = Number(b.paid), change = 0;
@@ -79,6 +83,8 @@ export const POST = handle(async (req) => {
   if (biz === "fnb") {
     orderType = b.orderType || "dine_in";
     if (!ORDER_TYPES.some((o) => o.key === orderType)) throw new HttpError(400, "Jenis pesanan tidak valid");
+    // Pesanan dari ShopeeFood/GoFood/GrabFood selalu dibungkus, tanpa meja
+    if (isFoodDelivery(method.key)) orderType = "take_away";
     tableNo = orderType === "dine_in" ? clip(b.tableNo, 10) : "";
     customerName = clip(b.customerName, 40);
   }
@@ -100,6 +106,8 @@ export const POST = handle(async (req) => {
     total: String(total), paid: String(paid), change: String(change), createdAt: now(),
     paymentKey: method.key, paymentLabel: method.label, paymentRef: clip(b.paymentRef, 40),
     orderType, tableNo, customerName, orderNo,
+    subtotal: String(subtotal), taxAmount: String(tax),
+    taxRate: taxCfg.enabled ? String(taxCfg.rate) : "0", taxMode: taxCfg.enabled ? taxCfg.mode : "",
   };
   await add("transactions", tx);
   await addMany("transaction_items", lines.map((l) => ({

@@ -15,4 +15,4 @@ export async function proxy(req: NextRequest) {
   }
   return NextResponse.redirect(new URL("/login", req.url));
 }
-export const config = { matcher: ["/dashboard/:path*", "/kasir/:path*", "/gudang/:path*", "/keuangan/:path*", "/pengaturan/:path*", "/monitor/:path*"] };
+export const config = { matcher: ["/dashboard/:path*", "/kasir/:path*", "/gudang/:path*", "/keuangan/:path*", "/pengaturan/:path*", "/monitor/:path*", "/pesan/:path*"] };

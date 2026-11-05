@@ -34,13 +34,26 @@ export default function JenisUsaha() {
         <li>Saat tutup kasir, hanya penjualan <strong>tunai</strong> yang masuk hitungan uang di laci. Laporan juga menampilkan total per metode. Halaman Keuangan punya tabel per metode pembayaran.</li>
       </ul>
 
+      <h2>PPN</h2>
+      <p>Kepala toko mengatur PPN di Pengaturan. PPN bisa diaktifkan atau dinonaktifkan kapan saja. Saat nonaktif, kasir dan struk tidak menampilkan PPN.</p>
+      <ul>
+        <li><strong>Tarif</strong>: bebas diisi kepala toko (default 12%, tersedia pilihan cepat 11% dan 12%).</li>
+        <li><strong>Ditambahkan di atas harga</strong>: harga produk belum termasuk PPN. Contoh belanja Rp100.000 dengan PPN 12% menjadi Rp112.000.</li>
+        <li><strong>Sudah termasuk di harga</strong>: harga produk sudah termasuk PPN. Total tetap Rp100.000, dan struk menulis &quot;Termasuk PPN 12%&quot; beserta nilainya.</li>
+        <li>Tarif dan cara hitung disimpan di setiap transaksi. Mengubah atau mematikan PPN hanya berlaku untuk transaksi berikutnya; struk lama tetap sama.</li>
+        <li>Halaman Keuangan menampilkan jumlah PPN di dalam penjualan. Aplikasi hanya menghitung. Kewajiban memungut PPN dan tarif yang berlaku sebaiknya ditanyakan ke konsultan pajak atau kantor pajak.</li>
+      </ul>
+
       <h2>Pantau kasir online atau offline</h2>
       <p>Kepala toko (semua cabang) dan kepala cabang (cabangnya) membuka menu <code>Pantau kasir</code>. Halaman ini menampilkan setiap kasir: online atau offline, kasir sedang dibuka atau ditutup, penjualan hari ini, dan waktu transaksi terakhir. Datanya diperbarui otomatis tiap 20 detik.</p>
       <ul>
         <li>Online berarti aplikasi terbuka di perangkat kasir dan terhubung internet. Kasir dianggap offline bila tidak ada sinyal selama sekitar 2 menit, atau setelah keluar (logout).</li>
         <li>Kasir yang masih dibuka tetapi offline ditandai <strong>Perlu dicek</strong>.</li>
-        <li>Saat offline, kasir melihat peringatan dan tombol bayar dinonaktifkan sampai koneksi kembali. Aplikasi belum menyimpan transaksi offline untuk dikirim belakangan.</li>
+        <li>Saat offline, kasir melihat peringatan dan tombol bayar dinonaktifkan sampai koneksi kembali.</li>
       </ul>
+      <blockquote>
+        <p><strong>Penting:</strong> aplikasi belum menyimpan transaksi saat offline untuk dikirim belakangan. Jika internet putus, tunggu sampai tersambung lagi sebelum menekan tombol bayar.</p>
+      </blockquote>
     </>
   );
 }

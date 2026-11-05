@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession, type Role, type Session } from "./auth";
-import type { Row } from "./sheets";
+import { isQuotaError, type Row } from "./sheets";
 
 export class HttpError extends Error {
   constructor(public status: number, msg: string) { super(msg); }
@@ -26,6 +26,10 @@ export function handle(fn: (req: Request) => Promise<unknown>) {
       return NextResponse.json(await fn(req));
     } catch (e) {
       if (e instanceof HttpError) return NextResponse.json({ error: e.message }, { status: e.status });
+      if (isQuotaError(e)) {
+        console.warn("[sheets] kuota baca Google Sheets habis");
+        return NextResponse.json({ error: "Layanan sedang sibuk (batas permintaan Google Sheets). Tunggu sekitar 1 menit lalu coba lagi." }, { status: 429 });
+      }
       console.error(e);
       return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
     }

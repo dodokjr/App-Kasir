@@ -33,7 +33,7 @@ export const POST = handle(async (req) => {
   const s = await need(SELL);
   const b = await req.json();
   const names = await branchNames();
-  const mine = (await all("shifts")).find((x) => x.cashierId === s.uid && x.status === "open");
+  const mine = (await all("shifts", { fresh: true })).find((x) => x.cashierId === s.uid && x.status === "open");
 
   if (b.action === "open") {
     if (mine) throw new HttpError(400, "Kasir Anda sudah dibuka. Tutup kasir dulu sebelum membuka yang baru");

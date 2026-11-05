@@ -26,7 +26,7 @@ export const POST = handle(async (req) => {
   const email = String(b.email || "").trim().toLowerCase();
   if (!name || !email) throw new HttpError(400, "Nama dan email wajib diisi");
   if (String(b.password || "").length < 6) throw new HttpError(400, "Password minimal 6 karakter");
-  if ((await all("users")).some((u) => u.email === email)) throw new HttpError(409, "Email sudah terdaftar");
+  if ((await all("users", { fresh: true })).some((u) => u.email === email)) throw new HttpError(409, "Email sudah terdaftar");
 
   let storeId = s.storeId, branchId = s.branchId;
   if (s.role === "developer") { storeId = ""; branchId = ""; }

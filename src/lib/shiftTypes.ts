@@ -34,3 +34,9 @@ export type MonitorRow = {
   alert: boolean;
 };
 
+
+// Satu baris di buku saldo. balance = saldo setelah baris ini
+export type LedgerEntry = {
+  id: string; date: string; kind: "pemasukan" | "pengeluaran" | "pencairan";
+  label: string; detail: string; branchName: string; amount: number; balance: number;
+};

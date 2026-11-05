@@ -1,5 +1,6 @@
 import { handle, need, inScope, HttpError } from "@/lib/api";
 import { all } from "@/lib/sheets";
+import { isCash } from "@/lib/business";
 import { aggregateItems, aggregatePayments, dayKey, shape, branchNames } from "@/lib/shift";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -16,19 +17,24 @@ export const GET = handle(async (req) => {
 
   const branchId = s.role === "kepala_cabang" ? s.branchId : q.get("branchId") || "";
   const inBranch = (x: Record<string, string>) => !branchId || x.branchId === branchId;
-  const names = await branchNames();
+  const [names, allTx, allItems, allExp, allDep, allShifts] = await Promise.all([
+    branchNames(), all("transactions"), all("transaction_items"), all("expenses"), all("deposits"), all("shifts"),
+  ]);
 
-  const txs = (await all("transactions")).filter((t) => {
+  const txs = allTx.filter((t) => {
     const d = dayKey(t.createdAt);
     return inScope(s, t) && inBranch(t) && d >= from && d <= to;
   });
   const ids = new Set(txs.map((t) => t.id));
-  const items = aggregateItems((await all("transaction_items")).filter((i) => ids.has(i.transactionId)));
+  const items = aggregateItems(allItems.filter((i) => ids.has(i.transactionId)));
 
-  const expenses = (await all("expenses")).filter(
+  const expenses = allExp.filter(
     (x) => inScope(s, x) && inBranch(x) && x.voided !== "TRUE" && x.date >= from && x.date <= to,
   );
-  const shifts = (await all("shifts")).filter((x) => {
+  const deposits = allDep.filter(
+    (x) => inScope(s, x) && inBranch(x) && x.voided !== "TRUE" && x.date >= from && x.date <= to,
+  );
+  const shifts = allShifts.filter((x) => {
     const d = dayKey(x.openedAt);
     return inScope(s, x) && inBranch(x) && d >= from && d <= to;
   });
@@ -54,6 +60,10 @@ export const GET = handle(async (req) => {
       sales, txCount: txs.length, itemsSold: Math.round(items.reduce((a, i) => a + i.qty, 0) * 1000) / 1000,
       avgTicket: txs.length ? Math.round(sales / txs.length) : 0,
       expenses: spent, net: sales - spent,
+      tax: txs.reduce((a, t) => a + num(t.taxAmount), 0),
+      // Penjualan tunai (transaksi lama tanpa metode dianggap tunai) dan jumlah yang sudah dicatat disetor ke rekening
+      cashSales: txs.filter((t) => isCash(t.paymentKey)).reduce((a, t) => a + num(t.total), 0),
+      deposited: deposits.reduce((a, x) => a + num(x.amount), 0),
       shiftsClosed: closed.length, shiftsOpen: shifts.length - closed.length,
       cashDifference: closed.reduce((a, x) => a + num(x.difference), 0),
     },
@@ -62,6 +72,7 @@ export const GET = handle(async (req) => {
     byPayment: aggregatePayments(txs),
     byBranch: branchId ? [] : [...byBranch.values()].sort((a, b) => b.sales - a.sales),
     shifts: shifts.sort((a, b) => b.openedAt.localeCompare(a.openedAt)).map((x) => shape(x, names, undefined, false)),
+    deposits: deposits.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).map((x) => ({ ...x, branchName: names[x.branchId] ?? "-" })),
     expenses: expenses.sort((a, b) => b.date.localeCompare(a.date)).map((x) => ({ ...x, branchName: names[x.branchId] ?? "-" })),
   };
 });
