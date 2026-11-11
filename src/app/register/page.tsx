@@ -1,59 +1,345 @@
-import type { Metadata } from "next";
-import LegalLayout from "@/components/LegalLayout";
-import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Kebijakan Privasi | Kasir Toko" };
+"use client";
 
-export default function Privasi() {
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/client";
+import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
+
+const TYPES = [
+  {
+    v: "retail",
+    label: "Retail",
+    hint: "Toko, minimarket, butik",
+  },
+  {
+    v: "fnb",
+    label: "F&B",
+    hint: "Kafe, resto, warung",
+  },
+];
+
+export default function Register() {
+  const router = useRouter();
+
+  const [f, setF] = useState({
+    name: "",
+    email: "",
+    password: "",
+    storeName: "",
+    businessType: "retail",
+  });
+
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Alert otomatis hilang setelah 3,5 detik
+  useEffect(() => {
+    if (!err) return;
+
+    const timer = window.setTimeout(() => {
+      setErr("");
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [err]);
+
+  // Update input
+  function update<K extends keyof typeof f>(
+    key: K,
+    value: (typeof f)[K]
+  ) {
+    setF((current) => ({
+      ...current,
+      [key]: value,
+    }));
+
+    setErr("");
+  }
+
+  // Validasi dan proses registrasi
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (busy) return;
+
+    setErr("");
+
+    const name = f.name.trim();
+    const email = f.email.trim();
+    const storeName = f.storeName.trim();
+
+    // Validasi input kosong
+    if (!name || !email || !f.password || !storeName) {
+      setErr("Semua kolom wajib diisi. Periksa kembali formulir Anda.");
+      return;
+    }
+
+    // Validasi email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+      setErr("Format email tidak valid. Masukkan email yang benar.");
+      return;
+    }
+
+    // Validasi password
+    if (f.password.length < 8) {
+      setErr("Password minimal harus terdiri dari 8 karakter.");
+      return;
+    }
+
+    // Validasi jenis usaha
+    if (!TYPES.some((type) => type.v === f.businessType)) {
+      setErr("Silakan pilih jenis usaha yang tersedia.");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      await api("/api/auth/register", {
+        method: "POST",
+        body: {
+          ...f,
+          name,
+          email,
+          storeName,
+        },
+      });
+
+      router.replace("/dashboard");
+    } catch (error) {
+      setErr(
+        error instanceof Error
+          ? error.message
+          : "Registrasi gagal. Silakan coba kembali."
+      );
+
+      setBusy(false);
+    }
+  }
+
   return (
-    <LegalLayout
-      title="Kebijakan Privasi"
-      intro={<>Kebijakan ini menjelaskan data apa yang dikumpulkan {SITE.name}, untuk apa dipakai, dan bagaimana Anda bisa mengendalikannya. Layanan ini dikelola oleh {SITE.operator}.</>}
-      summary={[
-        "Kami menyimpan data akun, toko, dan penjualan Anda supaya aplikasi bisa berjalan.",
-        "Kami tidak menjual data Anda dan tidak memakainya untuk iklan.",
-        "Password disimpan dalam bentuk acak (hash), bukan teks asli.",
-        "Anda bisa meminta melihat, memperbaiki, atau menghapus data lewat halaman Kontak.",
-      ]}
-      sections={[
-        { id: "data-yang-dikumpulkan", title: "Data yang kami kumpulkan", body: (
+    <>
+      {/* Floating Toast Alert */}
+      {err && (
+        <div
+          key={err}
+          role="alert"
+          aria-live="assertive"
+          className="fixed left-1/2 top-5 z-[9999] flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border border-red-500/20 bg-white p-4 text-sm text-red-600 shadow-2xl shadow-black/10 dark:bg-[#1c1c25] dark:text-red-400 animate-[galaxy-toast-in_300ms_ease-out]"
+        >
+          {/* Error Icon */}
+          <svg
+            className="mt-0.5 h-5 w-5 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+
+          {/* Error Message */}
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Registrasi gagal</p>
+            <p className="mt-0.5 break-words">{err}</p>
+          </div>
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={() => setErr("")}
+            aria-label="Tutup notifikasi"
+            className="shrink-0 rounded-md p-1 opacity-60 transition hover:bg-red-500/10 hover:opacity-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="m18 6-12 12M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      <AuthShell
+        title="Daftarkan toko Anda"
+        subtitle="Buat akun kepala toko dan mulai berjualan hari ini."
+        footer={
           <>
-            <ul>
-              <li><strong>Data akun:</strong> nama, alamat email, peran, dan password. Password disimpan hanya dalam bentuk hash (bcrypt), bukan teks asli.</li>
-              <li><strong>Data toko:</strong> nama toko, jenis usaha, nama cabang, dan nama jalan cabang.</li>
-              <li><strong>Data usaha:</strong> produk, satuan, harga, stok, transaksi beserta nama kasir, waktu, metode pembayaran, nomor referensi pembayaran yang diisi kasir, PPN, dan jumlah pembayaran, catatan buka dan tutup kasir (modal awal, uang yang dihitung, selisih, dan catatan), pengeluaran toko, serta pengaturan struk dan PPN (nama, alamat, telepon toko, tarif).</li>
-              <li><strong>Data pesanan (toko F&amp;B):</strong> nomor meja, nomor pesanan, nama customer, dan catatan menu, jika diisi oleh kasir.</li>
-              <li><strong>Status aktivitas akun:</strong> waktu terakhir akun terhubung dan halaman aplikasi yang sedang dibuka, supaya kepala toko dan kepala cabang bisa melihat kasir online atau offline.</li>
-              <li><strong>Pesan kontak:</strong> nama, email, subjek, dan isi pesan yang Anda kirim lewat halaman Kontak.</li>
-            </ul>
-            <p>Kami tidak meminta data pembeli. Nama customer di toko F&amp;B bersifat opsional untuk menandai pesanan, dan sebaiknya tidak diisi data yang sensitif. Struk berisi nama toko, cabang, kasir, dan rincian belanja.</p>
+            Sudah punya akun?{" "}
+            <Link href="/login" className="font-semibold text-link">
+              Masuk
+            </Link>
           </>
-        ) },
-        { id: "cara-data-dipakai", title: "Cara data dipakai", body: (
-          <p>Data dipakai untuk menjalankan layanan: memverifikasi login, membatasi akses sesuai peran, menghitung stok, transaksi, dan PPN, membuat struk dan laporan, menampilkan status kasir, dan membalas pesan Anda. Kami tidak memakai data Anda untuk iklan.</p>
-        ) },
-        { id: "tempat-penyimpanan", title: "Tempat penyimpanan", body: (
-          <p>Data disimpan di Google Sheets milik pengelola layanan dan diakses lewat Google Sheets API. Karena itu data juga tunduk pada kebijakan privasi Google sebagai penyedia infrastruktur penyimpanan.</p>
-        ) },
-        { id: "cookie", title: "Cookie dan penyimpanan di browser", body: (
-          <p>Kami memakai satu cookie bernama <code>sid</code> untuk menjaga Anda tetap login. Cookie ini bersifat httpOnly, berlaku 12 jam, dan dihapus saat Anda keluar. Kami juga menyimpan dua preferensi di penyimpanan lokal browser Anda: cabang yang terakhir dipilih (<code>branch</code>) dan tema terang atau gelap (<code>theme</code>). Keduanya hanya untuk kenyamanan tampilan, tidak dikirim ke server, dan bisa dihapus lewat pengaturan browser. Kami tidak memakai cookie iklan atau alat pelacak pihak ketiga.</p>
-        ) },
-        { id: "berbagi-data", title: "Berbagi data", body: (
-          <p>Kami tidak menjual data Anda. Data bisa dibuka kepada pengelola layanan dan pengembang yang menjalankan sistem, kepada penyedia infrastruktur seperti Google, atau jika diwajibkan oleh hukum yang berlaku. Dalam satu toko, data dibagikan antar akun sesuai peran, misalnya kepala toko dapat melihat akun, transaksi, dan keuangan seluruh cabangnya, sedangkan kasir hanya melihat laporan kasirnya sendiri.</p>
-        ) },
-        { id: "keamanan", title: "Keamanan", body: (
-          <p>Kami menyimpan password dalam bentuk hash, memakai sesi login terenkripsi dengan masa berlaku terbatas, dan membatasi akses data sesuai peran. Tidak ada sistem yang sepenuhnya bebas risiko, jadi gunakan password yang kuat dan jangan membagikannya.</p>
-        ) },
-        { id: "penyimpanan-dan-penghapusan", title: "Penyimpanan dan penghapusan", body: (
-          <p>Data disimpan selama akun atau toko aktif. Anda dapat meminta penghapusan akun atau data toko lewat <a href="/kontak">halaman Kontak</a>. Data transaksi, laporan kasir, dan pengeluaran dapat kami simpan lebih lama bila diperlukan untuk kewajiban hukum atau pembukuan. Pengeluaran yang dibatalkan tetap tersimpan dengan penanda batal agar jejak audit terjaga.</p>
-        ) },
-        { id: "hak-anda", title: "Hak Anda", body: (
-          <p>Sesuai Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi, Anda berhak mengakses, memperbaiki, dan meminta penghapusan data pribadi Anda, serta menarik persetujuan pemrosesan. Kirim permintaan ke {SITE.email}.</p>
-        ) },
-        { id: "anak-anak", title: "Anak-anak", body: <p>Layanan ini ditujukan untuk pelaku usaha dan karyawannya, bukan untuk anak di bawah umur.</p> },
-        { id: "perubahan-kebijakan", title: "Perubahan kebijakan", body: <p>Jika kebijakan ini berubah, tanggal pembaruan di atas akan diganti. Perubahan penting akan diumumkan di halaman ini.</p> },
-        { id: "hubungi-kami", title: "Hubungi kami", body: <p>{SITE.operator}<br />{SITE.address}<br />Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a></p> },
-      ]}
-    />
+        }
+      >
+        <form
+          onSubmit={submit}
+          noValidate
+          className="space-y-4"
+        >
+          {/* Nama pemilik */}
+          <div>
+            <label className="label" htmlFor="name">
+              Nama Anda
+            </label>
+
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              placeholder="Nama lengkap"
+              className="input"
+              value={f.name}
+              disabled={busy}
+              onChange={(e) => update("name", e.target.value)}
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="label" htmlFor="email">
+              Email
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="nama@toko.com"
+              className="input"
+              value={f.email}
+              disabled={busy}
+              onChange={(e) => update("email", e.target.value)}
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="label" htmlFor="pw">
+              Password
+            </label>
+
+            <PasswordInput
+              id="pw"
+              autoComplete="new-password"
+              minLength={8}
+              value={f.password}
+              disabled={busy}
+              onChange={(value) => update("password", value)}
+            />
+
+            <p className="mt-1 text-xs text-muted">
+              Minimal 8 karakter.
+            </p>
+          </div>
+
+          <hr className="border-current opacity-10" />
+
+          {/* Nama toko */}
+          <div>
+            <label className="label" htmlFor="store">
+              Nama toko
+            </label>
+
+            <input
+              id="store"
+              name="storeName"
+              type="text"
+              placeholder="Toko Maju Jaya"
+              autoComplete="organization"
+              className="input"
+              value={f.storeName}
+              disabled={busy}
+              onChange={(e) => update("storeName", e.target.value)}
+            />
+          </div>
+
+          {/* Jenis usaha */}
+          <fieldset disabled={busy}>
+            <legend className="label">Jenis usaha</legend>
+
+            <div className="grid grid-cols-2 gap-2">
+              {TYPES.map((type) => {
+                const selected = f.businessType === type.v;
+
+                return (
+                  <label
+                    key={type.v}
+                    className={`cursor-pointer rounded-xl border p-3 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                      selected
+                        ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 ring-1 ring-[rgb(var(--accent))]"
+                        : "border-current/15 hover:border-current/30"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="businessType"
+                      value={type.v}
+                      checked={selected}
+                      onChange={() =>
+                        update("businessType", type.v)
+                      }
+                      className="sr-only"
+                    />
+
+                    <span className="block text-sm font-semibold">
+                      {type.label}
+                    </span>
+
+                    <span className="block text-xs text-muted">
+                      {type.hint}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={busy}
+            className="btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                Mendaftarkan...
+              </>
+            ) : (
+              "Daftarkan toko"
+            )}
+          </button>
+
+          {/* Privacy */}
+          <p className="text-center text-xs text-muted">
+            Dengan mendaftar, Anda menyetujui{" "}
+            <Link
+              href="/privasi"
+              className="underline underline-offset-2"
+            >
+              Kebijakan Privasi
+            </Link>{" "}
+            kami.
+          </p>
+        </form>
+      </AuthShell>
+    </>
   );
 }

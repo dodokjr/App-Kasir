@@ -4,6 +4,7 @@ import Shell from "@/components/Shell";
 import ReceiptModal from "@/components/ReceiptModal";
 import ShiftReportModal from "@/components/ShiftReportModal";
 import BranchSelect from "@/components/BranchSelect";
+import { Alert, useFeedback } from "@/components/Feedback";
 import { useBranch } from "@/lib/useBranch";
 import { api, rp, tgl } from "@/lib/client";
 import { useOnline } from "@/lib/useOnline";
@@ -41,18 +42,18 @@ function OpenShift({ me, onOpened }: { me: Me; onOpened: (s: ShiftOut) => void }
   }
 
   return (
-    <form onSubmit={open} className="card mx-auto max-w-md space-y-4">
+    <form onSubmit={open} className="card mx-auto max-w-md space-y-5 p-6">
       <div>
-        <h2 className="text-lg font-semibold">Buka kasir</h2>
-        <p className="text-sm text-muted">Hitung uang tunai di laci, lalu isi sebagai modal awal. Semua penjualan sampai kasir ditutup akan dijumlahkan otomatis.</p>
+        <h2 className="text-xl font-bold">Buka kasir</h2>
+        <p className="mt-1 text-sm text-muted">Hitung uang tunai di laci, lalu isi sebagai modal awal. Semua penjualan sampai kasir ditutup akan dijumlahkan otomatis.</p>
       </div>
       {owner && branches.length > 0 && <BranchSelect branches={branches} value={branchId} onChange={setBranch} />}
       <div>
         <label className="label" htmlFor="opening">Modal awal (uang di laci)</label>
         <input id="opening" inputMode="numeric" className="input font-mono" placeholder="0" value={cash} onChange={(e) => setCash(e.target.value.replace(/\D/g, ""))} />
       </div>
-      {err && <p className="text-sm text-danger" role="alert">{err}</p>}
-      <button className="btn-primary w-full" disabled={busy || (owner && !branchId)}>{busy ? "Membuka…" : "Buka kasir"}</button>
+      {err && <Alert tone="error">{err}</Alert>}
+      <button className="btn-primary btn-lg w-full" disabled={busy || (owner && !branchId)}>{busy ? "Membuka…" : "Buka kasir"}</button>
     </form>
   );
 }
@@ -74,20 +75,20 @@ function CloseModal({ shift, onCancel, onDone }: { shift: ShiftOut; onCancel: ()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Tutup kasir">
-      <div className="card max-h-full w-full max-w-lg space-y-4 overflow-y-auto">
-        <div><h2 className="text-lg font-semibold">Tutup kasir</h2><p className="text-sm text-muted">Dibuka {tgl(shift.openedAt)}</p></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Tutup kasir">
+      <div className="card max-h-full w-full max-w-lg space-y-4 overflow-y-auto p-6 shadow-2xl">
+        <div><h2 className="text-xl font-bold">Tutup kasir</h2><p className="text-sm text-muted">Dibuka {tgl(shift.openedAt)}</p></div>
 
         <dl className="grid grid-cols-2 gap-3 text-sm">
-          <div className="card"><dt className="text-muted">Transaksi</dt><dd className="font-mono text-lg">{shift.txCount}</dd></div>
-          <div className="card"><dt className="text-muted">Item terjual</dt><dd className="font-mono text-lg">{shift.itemsSold}</dd></div>
-          <div className="card"><dt className="text-muted">Total penjualan</dt><dd className="font-mono text-lg">{rp(shift.totalSales)}</dd></div>
-          <div className="card"><dt className="text-muted">Modal awal</dt><dd className="font-mono text-lg">{rp(shift.openingCash)}</dd></div>
+          <div className="rounded-xl bg-paper p-3"><dt className="text-muted">Transaksi</dt><dd className="font-mono text-lg">{shift.txCount}</dd></div>
+          <div className="rounded-xl bg-paper p-3"><dt className="text-muted">Item terjual</dt><dd className="font-mono text-lg">{shift.itemsSold}</dd></div>
+          <div className="rounded-xl bg-paper p-3"><dt className="text-muted">Total penjualan</dt><dd className="font-mono text-lg">{rp(shift.totalSales)}</dd></div>
+          <div className="rounded-xl bg-paper p-3"><dt className="text-muted">Modal awal</dt><dd className="font-mono text-lg">{rp(shift.openingCash)}</dd></div>
         </dl>
 
         {shift.payments.length > 0 && (
-          <div className="card space-y-1 text-sm">
-            <div className="font-medium">Per metode pembayaran</div>
+          <div className="space-y-1 rounded-xl bg-paper p-4 text-sm">
+            <div className="font-semibold">Per metode pembayaran</div>
             {shift.payments.map((p) => (
               <div key={p.key} className="flex justify-between"><span>{p.label} <span className="text-muted">({p.count})</span></span><span className="font-mono">{rp(p.total)}</span></div>
             ))}
@@ -105,22 +106,22 @@ function CloseModal({ shift, onCancel, onDone }: { shift: ShiftOut; onCancel: ()
         )}
 
         <div className="flex justify-between text-sm text-muted"><span>Modal awal + penjualan tunai ({rp(shift.cashSales)})</span></div>
-        <div className="flex justify-between text-lg font-semibold"><span>Kas seharusnya</span><span className="font-mono">{rp(shift.expectedCash)}</span></div>
+        <div className="flex justify-between text-lg font-bold"><span>Kas seharusnya</span><span className="font-mono">{rp(shift.expectedCash)}</span></div>
         <div>
           <label className="label" htmlFor="counted">Uang tunai yang dihitung di laci</label>
           <input id="counted" autoFocus inputMode="numeric" className="input font-mono" value={counted} onChange={(e) => setCounted(e.target.value.replace(/\D/g, ""))} />
-          <p className="mt-1 text-sm" aria-live="polite">
+          <p className="mt-1.5 text-sm" aria-live="polite">
             {diff === null ? <span className="text-muted">Isi jumlah uang untuk melihat selisih.</span>
-              : diff === 0 ? <span>Kas pas.</span>
-              : diff > 0 ? <span>Lebih {rp(diff)}</span>
-              : <span className="text-danger">Kurang {rp(-diff)}</span>}
+              : diff === 0 ? <span className="font-semibold text-accent dark:text-link">Kas pas.</span>
+              : diff > 0 ? <span className="font-semibold">Lebih {rp(diff)}</span>
+              : <span className="font-semibold text-danger">Kurang {rp(-diff)}</span>}
           </p>
         </div>
         <div>
           <label className="label" htmlFor="note">Catatan (opsional)</label>
           <input id="note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
-        {err && <p className="text-sm text-danger" role="alert">{err}</p>}
+        {err && <Alert tone="error">{err}</Alert>}
         <div className="flex gap-2">
           <button className="btn-primary flex-1" disabled={busy || counted === ""} onClick={close}>{busy ? "Menutup…" : "Tutup kasir dan cetak laporan"}</button>
           <button className="btn-ghost" onClick={onCancel} disabled={busy}>Batal</button>
@@ -132,6 +133,7 @@ function CloseModal({ shift, onCancel, onDone }: { shift: ShiftOut; onCancel: ()
 
 /* ---------- Kasir (POS) ---------- */
 function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: () => void; onClose: () => void }) {
+  const { ok } = useFeedback();
   const biz: BusinessType = me.store?.businessType ?? "retail";
   const fnb = biz === "fnb";
   const online = useOnline();
@@ -203,7 +205,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
           ...(fnb ? { orderType: effType, tableNo: effType === "dine_in" ? tableNo : "", customerName: customer } : {}),
         },
       });
-      setReceipt(r); setCart({}); setPaid(""); setRef(""); setTableNo(""); setCustomer(""); load(); reload();
+      setReceipt(r); setCart({}); setPaid(""); setRef(""); setTableNo(""); setCustomer(""); ok("Pembayaran berhasil"); load(); reload();
     } catch (x) { setErr((x as Error).message); load().catch(() => {}); }
     setBusy(false);
   }
@@ -213,10 +215,10 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
 
   return (
     <div className="space-y-4">
-      <div className="card flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <div><span className="text-muted">Cabang</span><div className="font-medium">{shift.branchName}</div></div>
+      <div className="card flex flex-wrap items-center gap-x-8 gap-y-3 p-4 text-sm sm:px-5">
+        <div><span className="text-muted">Cabang</span><div className="font-semibold">{shift.branchName}</div></div>
         <div><span className="text-muted">Dibuka</span><div>{tgl(shift.openedAt)}</div></div>
-        <div><span className="text-muted">Penjualan shift ini</span><div className="font-mono">{rp(shift.totalSales)} <span className="text-muted">({shift.txCount} transaksi)</span></div></div>
+        <div><span className="text-muted">Penjualan shift ini</span><div className="font-mono font-semibold">{rp(shift.totalSales)} <span className="font-sans font-normal text-muted">({shift.txCount} transaksi)</span></div></div>
         <div className="ml-auto"><button className="btn-ghost" onClick={onClose}>Tutup kasir</button></div>
       </div>
 
@@ -224,7 +226,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
         {receipt && <ReceiptModal receipt={receipt} fresh onClose={() => setReceipt(null)} />}
         <section className="space-y-3">
           <div className="relative">
-            <input type="text" className="input py-2.5 pr-10 text-base" placeholder="Cari produk, atau scan barcode" aria-label="Cari produk" value={q}
+            <input type="text" className="input py-3 pr-10 text-base" placeholder="Cari produk, atau scan barcode" aria-label="Cari produk" value={q}
               onChange={(e) => { setQ(e.target.value); setFlash(""); }}
               onKeyDown={(e) => {
                 // Pemindai barcode mengetik kode SKU lalu menekan Enter: tambahkan langsung ke keranjang
@@ -259,18 +261,18 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
           </div>
         </section>
 
-        <aside className="card h-fit space-y-3">
-          <h2 className="font-semibold">Keranjang</h2>
+        <aside className="card h-fit space-y-4 p-5">
+          <h2 className="text-lg font-bold">Keranjang</h2>
 
           {fnb && (
-            <div className="space-y-3 rounded-md border border-line p-3">
+            <div className="space-y-3 rounded-xl border border-line p-3">
               <div className="flex gap-2" role="radiogroup" aria-label="Jenis pesanan">
                 {ORDER_TYPES.map((o) => (
                   <button key={o.key} type="button" role="radio" aria-checked={effType === o.key} disabled={food} onClick={() => setOrderType(o.key)}
                     className={`flex-1 ${effType === o.key ? "btn-primary" : "btn-ghost"}`}>{o.label}</button>
                 ))}
               </div>
-              {food && <p className="rounded-lg bg-sun/20 px-3 py-2 text-sm font-medium" role="status">Pesanan {cur?.label} otomatis dibungkus, jadi tidak perlu nomor meja.</p>}
+              {food && <Alert tone="info">Pesanan {cur?.label} otomatis dibungkus, jadi tidak perlu nomor meja.</Alert>}
               <div className="grid grid-cols-2 gap-3">
                 {effType === "dine_in" && (
                   <div><label className="label" htmlFor="tbl">Nomor meja</label><input id="tbl" maxLength={10} className="input" value={tableNo} onChange={(e) => setTableNo(e.target.value)} /></div>
@@ -281,14 +283,14 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
             </div>
           )}
 
-          {!lines.length && <p className="text-sm text-muted">Pilih produk untuk menambahkannya.</p>}
+          {!lines.length && <p className="rounded-xl bg-paper p-4 text-center text-sm text-muted">Pilih produk untuk menambahkannya.</p>}
           <ul className="divide-y divide-line">
             {lines.map(({ p, text, note, step, bad, sub }) => {
               const dec = step < 1, u = unitOf(p.unit).label;
               return (
                 <li key={p.id} className="space-y-1 py-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1"><div>{p.name}</div><div className="font-mono text-xs text-muted">{rp(p.price)} / {u} · {rp(sub)}</div></div>
+                    <div className="flex-1"><div className="font-medium">{p.name}</div><div className="font-mono text-xs text-muted">{rp(p.price)} / {u} · {rp(sub)}</div></div>
                     <button className="btn-ghost px-2 py-1" aria-label={`Kurangi ${p.name}`} onClick={() => setQty(p, (parseQty(text) || 0) - step)}>−</button>
                     <input aria-label={`Jumlah ${p.name} (${u})`} inputMode={dec ? "decimal" : "numeric"} value={text}
                       onChange={(e) => typeQty(p, dec ? e.target.value : e.target.value.replace(/\D/g, ""))}
@@ -302,7 +304,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
                     </div>
                   )}
                   {fnb && <input aria-label={`Catatan untuk ${p.name}`} maxLength={80} className="input py-1 text-xs" placeholder="Catatan dapur (mis. tanpa gula)" value={note} onChange={(e) => setNote(p, e.target.value)} />}
-                  {bad && <p className="text-xs text-danger" role="alert">{bad}</p>}
+                  {bad && <p className="text-xs font-medium text-danger" role="alert">{bad}</p>}
                 </li>
               );
             })}
@@ -313,7 +315,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
               <div className="flex justify-between"><span className="text-muted">PPN {fmtRate(taxCfg.rate)}%</span><span className="font-mono">{rp(tax)}</span></div>
             </div>
           )}
-          <div className="flex justify-between text-lg font-semibold"><span>Total</span><span className="font-mono">{rp(total)}</span></div>
+          <div className="flex items-baseline justify-between text-xl font-extrabold"><span>Total</span><span className="font-mono">{rp(total)}</span></div>
           {tax > 0 && taxCfg.mode === "inclusive" && <div className="flex justify-between text-xs text-muted"><span>Sudah termasuk PPN {fmtRate(taxCfg.rate)}%</span><span className="font-mono">{rp(tax)}</span></div>}
 
           <div>
@@ -334,7 +336,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
                 <button className="btn-ghost" onClick={() => setPaid(String(total))}>Uang pas</button>
                 {[50000, 100000].map((n) => <button key={n} className="btn-ghost" onClick={() => setPaid(String(n))}>{rp(n)}</button>)}
               </div>
-              <div className="mt-2 flex justify-between text-sm"><span className="text-muted">Kembalian</span><span className="font-mono">{paid && change >= 0 ? rp(change) : "-"}</span></div>
+              <div className="mt-3 flex justify-between rounded-xl bg-paper px-4 py-2.5 text-sm"><span className="text-muted">Kembalian</span><span className="font-mono font-semibold">{paid && change >= 0 ? rp(change) : "-"}</span></div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -343,9 +345,9 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
             </div>
           )}
 
-          {!online && <p className="text-sm text-danger" role="alert">Anda sedang offline. Pembayaran dinonaktifkan sampai koneksi kembali.</p>}
-          {err && <p className="text-sm text-danger" role="alert">{err}</p>}
-          <button className="btn-primary w-full" disabled={!canPay} onClick={checkout}>
+          {!online && <Alert tone="warning" title="Anda sedang offline">Pembayaran dinonaktifkan sampai koneksi kembali.</Alert>}
+          {err && <Alert tone="error">{err}</Alert>}
+          <button className="btn-primary btn-lg w-full" disabled={!canPay} onClick={checkout}>
             {busy ? "Memproses…" : "Bayar dan cetak struk"}
           </button>
         </aside>
@@ -355,6 +357,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
 }
 
 function Cashier({ me }: { me: Me }) {
+  const { ok } = useFeedback();
   const [shift, setShift] = useState<ShiftOut | null | undefined>(undefined);
   const [closing, setClosing] = useState(false);
   const [report, setReport] = useState<ShiftOut | null>(null);
@@ -366,7 +369,7 @@ function Cashier({ me }: { me: Me }) {
   }, []);
   useEffect(() => { reload(); }, [reload]);
 
-  if (fatal) return <p className="text-sm text-danger" role="alert">{fatal}</p>;
+  if (fatal) return <Alert tone="error">{fatal}</Alert>;
   if (shift === undefined) return <p className="text-sm text-muted">Memuat…</p>;
 
   return (
@@ -374,9 +377,9 @@ function Cashier({ me }: { me: Me }) {
       {report && <ShiftReportModal shift={report} onClose={() => setReport(null)} />}
       {closing && shift && (
         <CloseModal shift={shift} onCancel={() => setClosing(false)}
-          onDone={(s) => { setClosing(false); setShift(null); setReport(s); }} />
+          onDone={(s) => { setClosing(false); setShift(null); setReport(s); ok("Kasir ditutup"); }} />
       )}
-      {shift ? <Pos me={me} shift={shift} reload={reload} onClose={() => setClosing(true)} /> : <OpenShift me={me} onOpened={setShift} />}
+      {shift ? <Pos me={me} shift={shift} reload={reload} onClose={() => setClosing(true)} /> : <OpenShift me={me} onOpened={(s) => { setShift(s); ok("Kasir dibuka"); }} />}
     </>
   );
 }

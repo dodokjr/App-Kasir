@@ -89,3 +89,41 @@
   .doc .quick span { @apply mt-1 block text-sm font-normal leading-6 text-muted; }
   .receipt-edge { padding-bottom: 28px; -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
 }
+
+
+@keyframes galaxy-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[galaxy-toast-in_300ms_ease-out\] {
+    animation: none !important;
+  }
+}
+
+
+@keyframes galaxy-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[galaxy-toast-in_300ms_ease-out\] {
+    animation: none !important;
+  }
+}

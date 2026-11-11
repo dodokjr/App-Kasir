@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Shell, { Avatar, Ico, ROLE_LABEL } from "@/components/Shell";
 import ReceiptModal from "@/components/ReceiptModal";
 import BranchSelect from "@/components/BranchSelect";
+import { Alert, useFeedback } from "@/components/Feedback";
 import { useBranch } from "@/lib/useBranch";
 import { addDays, api, rp, tgl, wibDay } from "@/lib/client";
 import type { Me, ReceiptData } from "@/lib/types";
@@ -19,17 +20,20 @@ function Disclosure({ label, open, onToggle, children }: { label: string; open: 
   return (
     <div>
       <button type="button" className="btn-ghost" aria-expanded={open} onClick={onToggle}>{open ? "Tutup formulir" : `+ ${label}`}</button>
-      {open && <div className="mt-4 rounded-xl border border-line bg-paper p-4">{children}</div>}
+      {open && <div className="mt-4 rounded-2xl border border-line bg-paper p-5 text-left">{children}</div>}
     </div>
   );
 }
 
-function Kpi({ label, value, sub, tone, loading }: { label: string; value: string; sub?: ReactNode; tone?: "warn"; loading?: boolean }) {
+function Kpi({ label, value, sub, tone, loading, icon }: { label: string; value: string; sub?: ReactNode; tone?: "warn"; loading?: boolean; icon?: string }) {
   return (
     <div className="card p-5">
-      <div className="text-sm font-medium text-muted">{label}</div>
-      {loading ? <div className="mt-2 h-9 w-32 animate-pulse rounded-lg bg-line motion-reduce:animate-none" aria-label="Memuat" /> : <div className={`mt-1 text-3xl font-extrabold tracking-tight ${tone === "warn" ? "text-danger" : ""}`}>{value}</div>}
-      {sub && !loading && <div className="mt-1 text-sm text-muted">{sub}</div>}
+      <div className="flex items-center gap-2.5 text-sm font-medium text-muted">
+        {icon && <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${tone === "warn" ? "bg-danger/10 text-danger" : "bg-accent/10 text-accent dark:text-link"}`}><Ico n={icon} /></span>}
+        {label}
+      </div>
+      {loading ? <div className="mt-3 h-9 w-32 animate-pulse rounded-lg bg-line motion-reduce:animate-none" aria-label="Memuat" /> : <div className={`mt-3 text-3xl font-extrabold tracking-tight ${tone === "warn" ? "text-danger" : ""}`}>{value}</div>}
+      {sub && !loading && <div className="mt-1.5 text-sm text-muted">{sub}</div>}
     </div>
   );
 }
@@ -48,6 +52,7 @@ function Section({ title, count, action, children }: { title: string; count?: nu
 }
 
 function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[]; onDone: () => void }) {
+  const { ok } = useFeedback();
   const [f, setF] = useState({ name: "", email: "", password: "", role: roles[0], branchId: branches?.[0]?.id ?? "" });
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
@@ -55,7 +60,7 @@ function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[
   useEffect(() => { if (branches?.length && !f.branchId) setF((p) => ({ ...p, branchId: branches[0].id })); }, [branches, f.branchId]);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { await api("/api/users", { method: "POST", body: f }); setF({ ...f, name: "", email: "", password: "" }); onDone(); }
+    try { await api("/api/users", { method: "POST", body: f }); setF({ ...f, name: "", email: "", password: "" }); ok("Akun ditambahkan"); onDone(); }
     catch (x) { setErr((x as Error).message); }
     setBusy(false);
   }
@@ -79,7 +84,7 @@ function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[
           </select></div>
       )}
       <p className="text-sm text-muted sm:col-span-2">Setelah dibuat, berikan email dan password ini kepada orangnya langsung.</p>
-      {err && <p className="text-sm font-medium text-danger sm:col-span-2" role="alert">{err}</p>}
+      {err && <Alert tone="error" className="sm:col-span-2">{err}</Alert>}
       <div className="sm:col-span-2"><button className="btn-primary" disabled={busy}>{busy ? "Menyimpan…" : "Tambah akun"}</button></div>
     </form>
   );
@@ -88,6 +93,7 @@ function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[
 /* ---------- Developer dan admin ---------- */
 
 function Platform({ me }: { me: Me }) {
+  const { ok, fail, confirm } = useFeedback();
   const [stores, setStores] = useState<R[]>([]);
   const [users, setUsers] = useState<R[]>([]);
   const [unread, setUnread] = useState<number | null>(null);
@@ -110,9 +116,9 @@ function Platform({ me }: { me: Me }) {
   const active = stores.filter((s) => s.active !== "FALSE").length;
   async function toggle(s: R) {
     const off = s.active !== "FALSE";
-    if (off && !confirm(`Nonaktifkan toko "${s.name}"? Semua akun di toko ini tidak bisa berjualan sampai diaktifkan lagi.`)) return;
-    try { await api("/api/stores", { method: "PATCH", body: { id: s.id, active: !off } }); load(); }
-    catch (x) { setErr((x as Error).message); }
+    if (off && !(await confirm({ title: `Nonaktifkan toko “${s.name}”?`, text: "Semua akun di toko ini tidak bisa berjualan sampai toko diaktifkan lagi.", ok: "Nonaktifkan", danger: true }))) return;
+    try { await api("/api/stores", { method: "PATCH", body: { id: s.id, active: !off } }); ok(off ? "Toko dinonaktifkan" : "Toko diaktifkan"); load(); }
+    catch (x) { fail((x as Error).message); }
   }
 
   return (
@@ -127,11 +133,11 @@ function Platform({ me }: { me: Me }) {
         <Kpi label="Toko nonaktif" value={String(stores.length - active)} loading={!ready} />
         <Link href="/pesan" className="card block p-5 transition hover:border-accent">
           <div className="text-sm font-medium text-muted">Pesan Kontak</div>
-          <div className="mt-1 text-3xl font-extrabold tracking-tight">{unread === null ? "…" : unread}</div>
-          <div className="mt-1 text-sm text-link">{unread ? "belum dibaca. Buka kotak pesan" : "Tidak ada pesan baru"}</div>
+          <div className="mt-3 text-3xl font-extrabold tracking-tight">{unread === null ? "…" : unread}</div>
+          <div className="mt-1.5 text-sm text-link">{unread ? "belum dibaca. Buka kotak pesan" : "Tidak ada pesan baru"}</div>
         </Link>
       </div>
-      {err && <p className="text-sm font-medium text-danger" role="alert">{err}</p>}
+      {err && <Alert tone="error">{err}</Alert>}
 
       <Section title="Semua toko" count={stores.length}>
         <div className="-mx-5 overflow-x-auto">
@@ -180,13 +186,12 @@ function WeekChart({ days, today }: { days: { date: string; sales: number }[]; t
   const total = days.reduce((a, d) => a + d.sales, 0);
   return (
     <div>
-      <div className="flex items-end justify-between gap-2">
-        <div><h2 className="text-lg font-bold">Penjualan 7 hari terakhir</h2><p className="text-sm text-muted">Total {rp(total)}</p></div>
-      </div>
-      <div className="mt-5 flex h-40 items-end gap-2 sm:gap-3" role="img" aria-label={`Grafik penjualan 7 hari terakhir. ${days.map((d) => `${d.date}: ${rp(d.sales)}`).join(". ")}`}>
+      <h2 className="text-lg font-bold">Penjualan 7 hari terakhir</h2>
+      <p className="text-sm text-muted">Total <span className="font-semibold text-ink">{rp(total)}</span></p>
+      <div className="mt-6 flex h-44 items-end gap-2 sm:gap-3" role="img" aria-label={`Grafik penjualan 7 hari terakhir. ${days.map((d) => `${d.date}: ${rp(d.sales)}`).join(". ")}`}>
         {days.map((d) => (
           <div key={d.date} className="flex h-full flex-1 flex-col justify-end" title={`${d.date}: ${rp(d.sales)}`}>
-            <div className={`w-full rounded-t-lg ${d.date === today ? "bg-accent" : "bg-accent/30"}`} style={{ height: d.sales ? `${Math.max(4, (d.sales / max) * 100)}%` : "3px", opacity: d.sales ? 1 : 0.4 }} />
+            <div className={`w-full rounded-lg ${d.date === today ? "bg-accent" : "bg-accent/25"}`} style={{ height: d.sales ? `${Math.max(4, (d.sales / max) * 100)}%` : "3px", opacity: d.sales ? 1 : 0.4 }} />
           </div>
         ))}
       </div>
@@ -199,7 +204,17 @@ function WeekChart({ days, today }: { days: { date: string; sales: number }[]; t
   );
 }
 
+const SHORTCUTS = (owner: boolean): [string, string, string, string][] => [
+  ["/kasir", "kasir", "Buka kasir", "Mulai berjualan"],
+  ["/gudang", "gudang", "Gudang", "Produk dan stok"],
+  ["/keuangan", "keuangan", "Keuangan", "Penjualan dan pengeluaran"],
+  ["/permintaan", "permintaan", "Permintaan barang", owner ? "Dari cabang" : "Ke kepala toko"],
+  ["/monitor", "monitor", "Pantau kasir", "Online atau offline"],
+  ...(owner ? [["/pengaturan", "pengaturan", "Pengaturan", "Struk, PPN, pembayaran"] as [string, string, string, string]] : []),
+];
+
 function Team({ me }: { me: Me }) {
+  const { ok, fail } = useFeedback();
   const owner = me.session.role === "kepala_toko";
   const [branches, setBranches] = useState<R[]>([]);
   const [users, setUsers] = useState<R[]>([]);
@@ -238,6 +253,10 @@ function Team({ me }: { me: Me }) {
   }, [active, today]);
   useEffect(() => { load(); }, [load]);
 
+  async function openReceipt(id: string) {
+    try { setReceipt(await api<ReceiptData>(`/api/transactions?id=${id}`)); } catch (x) { fail((x as Error).message); }
+  }
+
   const bname = (id: string) => { const b = branches.find((x) => x.id === id); return b ? `${b.name} (${b.street})` : "-"; };
   const shownUsers = active ? users.filter((u) => u.branchId === active) : users;
 
@@ -268,8 +287,8 @@ function Team({ me }: { me: Me }) {
 
       <header className="flex flex-wrap items-end gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">{greeting()}, {me.session.name.split(" ")[0]}</h1>
-          <p className="mt-1 text-muted">
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{greeting()}, {me.session.name.split(" ")[0]}</h1>
+          <p className="mt-1.5 text-muted">
             {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" })}.{" "}
             {active ? `Menampilkan cabang ${bname(active)}.` : owner ? "Menampilkan semua cabang." : `Cabang ${me.branch?.name ?? ""}.`}
           </p>
@@ -280,44 +299,36 @@ function Team({ me }: { me: Me }) {
         </div>
       </header>
 
-      {loadErr && <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger" role="alert">{loadErr}</p>}
+      {loadErr && <Alert tone="error">{loadErr}</Alert>}
 
       {alerts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-danger/40 bg-danger/10 px-5 py-4" role="alert">
-          <div className="min-w-0 flex-1">
-            <div className="font-bold text-danger">{alerts.length} kasir terbuka tetapi offline</div>
-            <div className="text-sm">{alerts.map((a) => a.name).join(", ")}. Hubungi kasir untuk memastikan koneksinya.</div>
-          </div>
-          <Link href="/monitor" className="btn-primary">Lihat pantau kasir</Link>
-        </div>
+        <Alert tone="warning" title={`${alerts.length} kasir terbuka tetapi offline`}
+          action={<Link href="/monitor" className="btn-primary">Lihat pantau kasir</Link>}>
+          {alerts.map((a) => a.name).join(", ")}. Hubungi kasir untuk memastikan koneksinya.
+        </Alert>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Penjualan hari ini" value={rp(sales)} loading={!ready}
-          sub={delta === null ? (yd ? "Kemarin tidak ada penjualan" : "Belum ada pembanding kemarin") : <span className={delta >= 0 ? "font-semibold text-accent dark:text-link" : "font-semibold text-danger"}>{delta >= 0 ? "Naik" : "Turun"} {Math.abs(delta)}% dari kemarin</span>} />
-        <Kpi label="Transaksi hari ini" value={String(txCount)} loading={!ready} sub={txCount ? `Rata-rata ${rp(Math.round(sales / txCount))}` : "Belum ada transaksi"} />
-        <Kpi label="Kasir online" value={mon ? `${onlineN} dari ${cashiers.length}` : "-"} loading={!ready} sub={mon ? `${cashiers.filter((r) => r.shiftOpen).length} kasir sedang dibuka` : "Data tidak tersedia"} />
-        <Kpi label="Perlu dicek" value={String(alerts.length)} tone={alerts.length ? "warn" : undefined} loading={!ready} sub={alerts.length ? "Kasir terbuka tetapi offline" : "Semua kasir aman"} />
+        <Kpi icon="keuangan" label="Penjualan hari ini" value={rp(sales)} loading={!ready}
+          sub={delta === null ? (yd ? "Kemarin tidak ada penjualan" : "Belum ada pembanding kemarin") : (
+            <><span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${delta >= 0 ? "bg-accent/10 text-accent dark:text-link" : "bg-danger/10 text-danger"}`}><span aria-hidden="true">{delta >= 0 ? "▲" : "▼"}</span><span className="sr-only">{delta >= 0 ? "Naik" : "Turun"} </span>{Math.abs(delta)}%</span> dari kemarin</>
+          )} />
+        <Kpi icon="kasir" label="Transaksi hari ini" value={String(txCount)} loading={!ready} sub={txCount ? `Rata-rata ${rp(Math.round(sales / txCount))}` : "Belum ada transaksi"} />
+        <Kpi icon="monitor" label="Kasir online" value={mon ? `${onlineN} dari ${cashiers.length}` : "-"} loading={!ready} sub={mon ? `${cashiers.filter((r) => r.shiftOpen).length} kasir sedang dibuka` : "Data tidak tersedia"} />
+        <Kpi icon="monitor" label="Perlu dicek" value={String(alerts.length)} tone={alerts.length ? "warn" : undefined} loading={!ready} sub={alerts.length ? "Kasir terbuka tetapi offline" : "Semua kasir aman"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <section className="card p-5">{ready ? <WeekChart days={week} today={today} /> : <div className="h-52 animate-pulse rounded-xl bg-line motion-reduce:animate-none" aria-label="Memuat grafik" />}</section>
+        <section className="card p-5 sm:p-6">{ready ? <WeekChart days={week} today={today} /> : <div className="h-56 animate-pulse rounded-xl bg-line motion-reduce:animate-none" aria-label="Memuat grafik" />}</section>
 
-        <section className="card p-5" aria-label="Pintasan">
+        <section className="card p-5 sm:p-6" aria-label="Pintasan">
           <h2 className="text-lg font-bold">Pintasan</h2>
-          <ul className="mt-3 space-y-1">
-            {[
-              ["/kasir", "kasir", "Buka kasir", "Mulai berjualan"],
-              ["/gudang", "gudang", "Gudang", "Produk dan stok"],
-              ["/keuangan", "keuangan", "Keuangan", "Penjualan dan pengeluaran"],
-              ["/permintaan", "permintaan", "Permintaan barang", owner ? "Permintaan dari cabang" : "Minta barang ke kepala toko"],
-              ["/monitor", "monitor", "Pantau kasir", "Online atau offline"],
-              ...(owner ? [["/pengaturan", "pengaturan", "Pengaturan", "Struk, PPN, pembayaran"]] : []),
-            ].map(([href, ic, t, d]) => (
+          <ul className="mt-4 grid grid-cols-2 gap-3">
+            {SHORTCUTS(owner).map(([href, ic, t, d]) => (
               <li key={href}>
-                <Link href={href} className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-paper">
-                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-accent/10 text-accent dark:text-link"><Ico n={ic} /></span>
-                  <span><span className="block font-semibold leading-tight">{t}</span><span className="text-sm text-muted">{d}</span></span>
+                <Link href={href} className="flex h-full flex-col gap-3 rounded-xl border border-line p-3.5 transition hover:border-accent hover:bg-accent/5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent dark:text-link"><Ico n={ic} /></span>
+                  <span><span className="block text-sm font-semibold leading-tight">{t}</span><span className="mt-0.5 block text-xs text-muted">{d}</span></span>
                 </Link>
               </li>
             ))}
@@ -326,7 +337,7 @@ function Team({ me }: { me: Me }) {
       </div>
 
       {showSteps && (
-        <section className="rounded-2xl bg-sun/20 p-5 sm:p-6" aria-label="Langkah awal">
+        <section className="rounded-2xl border border-sun/50 bg-sun/15 p-5 sm:p-6" aria-label="Langkah awal">
           <div className="flex flex-wrap items-baseline gap-3"><h2 className="text-lg font-bold">Mulai dari sini</h2><span className="text-sm font-medium text-muted">{doneN} dari {steps.length} langkah selesai</span></div>
           <ol className="mt-4 grid gap-3 md:grid-cols-3">
             {steps.map((s, i) => (
@@ -347,12 +358,12 @@ function Team({ me }: { me: Me }) {
         action={owner ? <Disclosure label="Tambah cabang" open={addBranch} onToggle={() => setAddBranch(!addBranch)}>
           <form className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]" onSubmit={async (e) => {
             e.preventDefault(); setErr("");
-            try { await api("/api/branches", { method: "POST", body: bf }); setBf({ name: "", street: "" }); setAddBranch(false); load(); } catch (x) { setErr((x as Error).message); }
+            try { await api("/api/branches", { method: "POST", body: bf }); setBf({ name: "", street: "" }); setAddBranch(false); ok("Cabang ditambahkan"); load(); } catch (x) { setErr((x as Error).message); }
           }}>
             <div><label className="label" htmlFor="bf-name">Nama cabang</label><input id="bf-name" required className="input" value={bf.name} onChange={(e) => setBf({ ...bf, name: e.target.value })} /></div>
             <div><label className="label" htmlFor="bf-street">Nama jalan</label><input id="bf-street" required className="input" value={bf.street} onChange={(e) => setBf({ ...bf, street: e.target.value })} /></div>
             <div className="flex items-end"><button className="btn-primary w-full">Simpan cabang</button></div>
-            {err && <p className="text-sm font-medium text-danger sm:col-span-3" role="alert">{err}</p>}
+            {err && <Alert tone="error" className="sm:col-span-3">{err}</Alert>}
           </form>
         </Disclosure> : undefined}>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -363,7 +374,7 @@ function Team({ me }: { me: Me }) {
               <li key={b.id} className={`rounded-xl border p-4 ${on ? "border-accent bg-accent/5" : "border-line"}`}>
                 <div className="font-bold">{b.name}</div>
                 <div className="text-sm text-muted">Jl. {b.street}</div>
-                <div className="mt-2 text-sm">{n} anggota tim</div>
+                <div className="mt-3 inline-flex rounded-full bg-paper px-2.5 py-0.5 text-xs font-semibold text-muted">{n} anggota tim</div>
               </li>
             );
           })}
@@ -404,7 +415,7 @@ function Team({ me }: { me: Me }) {
                 <div className="truncate text-sm text-muted">{tgl(t.createdAt)}, {t.cashierName}{t.orderNo ? `, pesanan #${t.orderNo}${t.tableNo ? `, meja ${t.tableNo}` : ""}` : ""}</div>
                 <div className="truncate font-mono text-xs text-muted">{t.invoice}</div>
               </div>
-              <button className="btn-ghost" onClick={async () => setReceipt(await api(`/api/transactions?id=${t.id}`))}>Struk</button>
+              <button className="btn-ghost" onClick={() => openReceipt(t.id)}>Struk</button>
             </li>
           ))}
         </ul>
@@ -417,14 +428,14 @@ function Team({ me }: { me: Me }) {
                   <td className="td pl-5 font-mono text-xs">{t.invoice}</td><td className="td">{tgl(t.createdAt)}</td><td className="td">{bname(t.branchId)}</td><td className="td">{t.cashierName}</td>
                   <td className="td">{t.paymentLabel || "Cash"}{t.orderNo ? <span className="block text-xs text-muted">Pesanan #{t.orderNo}{t.tableNo ? `, meja ${t.tableNo}` : ""}</span> : null}</td>
                   <td className="td text-right font-mono font-semibold">{rp(t.total)}</td>
-                  <td className="td pr-5 text-right"><button className="btn-ghost" onClick={async () => setReceipt(await api(`/api/transactions?id=${t.id}`))}>Struk</button></td>
+                  <td className="td pr-5 text-right"><button className="btn-ghost" onClick={() => openReceipt(t.id)}>Struk</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {ready && !txs.length && (
-          <div className="rounded-xl bg-paper p-6 text-center">
+          <div className="rounded-2xl bg-paper p-8 text-center">
             <p className="font-semibold">Belum ada transaksi</p>
             <p className="mt-1 text-sm text-muted">Transaksi muncul di sini setelah kasir menyelesaikan penjualan pertama.</p>
             <Link href="/kasir" className="btn-primary mt-4">Buka kasir</Link>
@@ -454,11 +465,14 @@ function KasirHome({ me }: { me: Me }) {
   useEffect(() => { api<{ shift: ShiftOut | null }>("/api/shifts?current=1").then((r) => setShift(r.shift)).catch(() => setShift(null)); }, []);
   return (
     <Welcome me={me}>
-      <section className="card space-y-4 p-6">
+      <section className="card space-y-5 p-6">
         {shift === undefined ? <div className="h-16 animate-pulse rounded-xl bg-line motion-reduce:animate-none" aria-label="Memuat" /> : shift ? (
           <>
-            <div><div className="text-sm font-medium text-muted">Kasir Anda sedang dibuka</div><div className="mt-1 text-3xl font-extrabold tracking-tight">{rp(shift.totalSales)}</div>
-              <div className="text-sm text-muted">{shift.txCount} transaksi sejak {tgl(shift.openedAt)}</div></div>
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent dark:text-link"><span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />Kasir sedang dibuka</div>
+              <div className="mt-3 text-4xl font-extrabold tracking-tight">{rp(shift.totalSales)}</div>
+              <div className="mt-1 text-sm text-muted">{shift.txCount} transaksi sejak {tgl(shift.openedAt)}</div>
+            </div>
             <Link href="/kasir" className="btn-primary btn-lg w-full">Lanjut berjualan</Link>
           </>
         ) : (

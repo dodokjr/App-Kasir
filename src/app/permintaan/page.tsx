@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import { Alert, useFeedback } from "@/components/Feedback";
 import { api, tgl } from "@/lib/client";
 import { UNITS, fmtQty, parseQty, roundQty, stepOf, unitOf } from "@/lib/business";
 import type { Me } from "@/lib/types";
@@ -26,6 +27,7 @@ const Chip = ({ s }: { s: string }) => <span className={`rounded-full px-2.5 py-
 type Line = { key: number; text: string; unit: string; qty: string };
 
 function NewRequest({ prods, onDone }: { prods: R[]; onDone: () => void }) {
+  const { ok } = useFeedback();
   const [lines, setLines] = useState<Line[]>([{ key: 1, text: "", unit: "pcs", qty: "" }]);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
@@ -41,7 +43,7 @@ function NewRequest({ prods, onDone }: { prods: R[]; onDone: () => void }) {
         return { productId: p?.id, name: l.text.trim(), unit: p ? p.unit || "pcs" : l.unit, qty: parseQty(l.qty) };
       });
       await api("/api/stock-requests", { method: "POST", body: { items, note } });
-      setLines([{ key: Date.now(), text: "", unit: "pcs", qty: "" }]); setNote(""); onDone();
+      setLines([{ key: Date.now(), text: "", unit: "pcs", qty: "" }]); setNote(""); ok("Permintaan terkirim"); onDone();
     } catch (x) { setErr((x as Error).message); }
     setBusy(false);
   }
@@ -74,7 +76,7 @@ function NewRequest({ prods, onDone }: { prods: R[]; onDone: () => void }) {
       </ul>
       <button type="button" className="btn-ghost" onClick={() => setLines((ls) => [...ls, { key: Date.now(), text: "", unit: "pcs", qty: "" }])}>+ Tambah barang</button>
       <div><label className="label" htmlFor="req-note">Catatan untuk kepala toko (opsional)</label><input id="req-note" className="input" maxLength={300} placeholder="Contoh: untuk stok akhir pekan" value={note} onChange={(e) => setNote(e.target.value)} /></div>
-      {err && <p className="text-sm font-medium text-danger" role="alert">{err}</p>}
+      {err && <Alert tone="error">{err}</Alert>}
       <button className="btn-primary" disabled={busy}>{busy ? "Mengirim…" : "Kirim permintaan"}</button>
     </form>
   );
@@ -87,6 +89,7 @@ function Step({ on, title, sub }: { on: boolean; title: string; sub?: string }) 
 }
 
 function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods: R[]; branches: R[]; reload: () => void }) {
+  const { ok, confirm } = useFeedback();
   const owner = me.session.role === "kepala_toko";
   const needs = owner ? r.status === "diajukan" : r.status === "dikirim";
   const [open, setOpen] = useState(needs);
@@ -125,9 +128,9 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
   const recvOf = (i: R) => recv[i.id] ?? fmtQty(Number(i.sentQty || 0));
   const [recvNote, setRecvNote] = useState("");
 
-  async function act(body: object, after?: () => void) {
+  async function act(body: object, after?: () => void, done?: string) {
     setBusy(true); setErr("");
-    try { await api("/api/stock-requests", { method: "PATCH", body: { id: r.id, ...body } }); after?.(); reload(); }
+    try { await api("/api/stock-requests", { method: "PATCH", body: { id: r.id, ...body } }); after?.(); if (done) ok(done); reload(); }
     catch (x) { setErr((x as Error).message); }
     setBusy(false);
   }
@@ -135,7 +138,7 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
 
   return (
     <li className={`card p-0 ${needs ? "border-accent" : ""}`}>
-      <button className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-4 text-left" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-5 text-left" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="font-mono text-sm font-bold">{r.requestNo}</span>
         <Chip s={r.status} />
         {needs && <span className="text-xs font-semibold text-link">Perlu tindakan Anda</span>}
@@ -146,7 +149,7 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
       </button>
 
       {open && (
-        <div className="space-y-5 border-t border-line p-4">
+        <div className="space-y-5 border-t border-line p-5">
           <ol className="flex gap-3" aria-label="Tahapan">
             <Step on title="Diajukan" sub={`${tgl(r.createdAt)}, ${r.requestedByName}`} />
             {r.status === "ditolak" ? <Step on title="Ditolak" sub={`${r.handledByName}: ${r.handledNote}`} />
@@ -191,8 +194,8 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
 
           {/* ---- Kepala toko memproses ---- */}
           {owner && r.status === "diajukan" && (
-            <div className="space-y-4 rounded-xl border border-line bg-paper p-4">
-              <h3 className="font-bold">Proses permintaan</h3>
+            <div className="space-y-4 rounded-2xl border border-line bg-paper p-5">
+              <h3 className="text-lg font-bold">Proses permintaan</h3>
               <div className="max-w-sm"><label className="label" htmlFor={`from-${r.id}`}>Ambil barang dari cabang</label>
                 <select id={`from-${r.id}`} className="input" value={from} onChange={(e) => setFrom(e.target.value)}>
                   <option value="">Pilih cabang asal</option>
@@ -228,15 +231,15 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
                 <div><label className="label" htmlFor={`trk-${r.id}`}>Nomor resi / nomor pengiriman</label><input id={`trk-${r.id}`} className="input font-mono" maxLength={40} placeholder="Contoh: JNE1234567890" value={track} onChange={(e) => setTrack(e.target.value)} /></div>
                 <div><label className="label" htmlFor={`sn-${r.id}`}>Catatan (opsional)</label><input id={`sn-${r.id}`} className="input" maxLength={300} placeholder="Contoh: sisa dikirim minggu depan" value={shipNote} onChange={(e) => setShipNote(e.target.value)} /></div>
               </div>
-              <p className="text-sm text-muted">Stok cabang asal berkurang saat Anda menekan Kirim. Stok cabang peminta bertambah setelah mereka mengonfirmasi penerimaan.</p>
+              <Alert tone="info">Stok cabang asal berkurang saat Anda menekan Kirim. Stok cabang peminta bertambah setelah mereka mengonfirmasi penerimaan.</Alert>
               <div className="flex flex-wrap gap-2">
-                <button className="btn-primary" disabled={busy || !from} onClick={() => act({ action: "kirim", fromBranchId: from, trackingNo: track, note: shipNote, items: r.items.map((i) => ({ itemId: i.id, fromProductId: plan[i.id]?.pid, sentQty: parseQty(plan[i.id]?.sent || "0") })) })}>{busy ? "Memproses…" : "Kirim barang"}</button>
+                <button className="btn-primary" disabled={busy || !from} onClick={() => act({ action: "kirim", fromBranchId: from, trackingNo: track, note: shipNote, items: r.items.map((i) => ({ itemId: i.id, fromProductId: plan[i.id]?.pid, sentQty: parseQty(plan[i.id]?.sent || "0") })) }, undefined, "Barang dikirim")}>{busy ? "Memproses…" : "Kirim barang"}</button>
                 <button className="btn-ghost" onClick={() => setRejecting(!rejecting)}>Tolak permintaan</button>
               </div>
               {rejecting && (
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="min-w-[240px] flex-1"><label className="label" htmlFor={`why-${r.id}`}>Alasan penolakan</label><input id={`why-${r.id}`} className="input" maxLength={300} value={why} onChange={(e) => setWhy(e.target.value)} /></div>
-                  <button className="btn-ghost border-danger text-danger" disabled={busy} onClick={() => act({ action: "tolak", note: why })}>Konfirmasi tolak</button>
+                  <button className="btn-ghost border-danger text-danger" disabled={busy} onClick={() => act({ action: "tolak", note: why }, undefined, "Permintaan ditolak")}>Konfirmasi tolak</button>
                 </div>
               )}
             </div>
@@ -244,8 +247,8 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
 
           {/* ---- Peminta mengonfirmasi penerimaan ---- */}
           {!owner && r.status === "dikirim" && (
-            <div className="space-y-4 rounded-xl border border-accent bg-accent/5 p-4">
-              <h3 className="font-bold">Konfirmasi barang diterima</h3>
+            <div className="space-y-4 rounded-2xl border border-accent bg-accent/5 p-5">
+              <h3 className="text-lg font-bold">Konfirmasi barang diterima</h3>
               <p className="text-sm text-muted">Hitung barang yang datang. Jika ada yang kurang atau rusak, ubah jumlahnya. Stok cabang bertambah sesuai jumlah yang diterima.</p>
               <div className="overflow-x-auto">
                 <table className="w-full"><thead><tr><th className="th">Barang</th><th className="th">Diminta</th><th className="th">Dikirim</th><th className="th">Diterima</th></tr></thead>
@@ -266,18 +269,20 @@ function RequestCard({ r, me, prods, branches, reload }: { r: Req; me: Me; prods
                   </tbody></table>
               </div>
               <div><label className="label" htmlFor={`rn-${r.id}`}>Catatan penerimaan (opsional)</label><input id={`rn-${r.id}`} className="input" maxLength={300} placeholder="Contoh: 1 jeruk rusak" value={recvNote} onChange={(e) => setRecvNote(e.target.value)} /></div>
-              <button className="btn-primary" disabled={busy || sentTotal <= 0} onClick={() => act({ action: "terima", note: recvNote, items: r.items.map((i) => ({ itemId: i.id, receivedQty: parseQty(recvOf(i) || "0") })) })}>{busy ? "Memproses…" : "Konfirmasi diterima"}</button>
+              <button className="btn-primary" disabled={busy || sentTotal <= 0} onClick={() => act({ action: "terima", note: recvNote, items: r.items.map((i) => ({ itemId: i.id, receivedQty: parseQty(recvOf(i) || "0") })) }, undefined, "Penerimaan dikonfirmasi")}>{busy ? "Memproses…" : "Konfirmasi diterima"}</button>
             </div>
           )}
 
           {!owner && r.status === "diajukan" && (
-            <button className="btn-ghost" disabled={busy} onClick={() => { if (confirm("Batalkan permintaan ini?")) act({ action: "batal" }); }}>Batalkan permintaan</button>
+            <button className="btn-ghost" disabled={busy} onClick={async () => {
+              if (await confirm({ title: "Batalkan permintaan ini?", text: r.requestNo, ok: "Batalkan permintaan", cancel: "Kembali", danger: true })) act({ action: "batal" }, undefined, "Permintaan dibatalkan");
+            }}>Batalkan permintaan</button>
           )}
-          {err && <p className="text-sm font-medium text-danger" role="alert">{err}</p>}
+          {err && <Alert tone="error">{err}</Alert>}
 
           {/* ---- Percakapan ---- */}
           <section aria-label="Catatan dan balasan" className="space-y-3">
-            <h3 className="font-bold">Catatan dan balasan</h3>
+            <h3 className="text-lg font-bold">Catatan dan balasan</h3>
             {r.notes.length === 0 && <p className="text-sm text-muted">Belum ada catatan. Tulis pesan untuk {owner ? "peminta" : "kepala toko"} bila ada yang perlu ditanyakan.</p>}
             <ul className="space-y-2">
               {r.notes.map((n) => {
@@ -352,7 +357,13 @@ function Requests({ me }: { me: Me }) {
         </section>
       )}
 
-      {err && <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger" role="alert">{err}</p>}
+      {err && <Alert tone="error">{err}</Alert>}
+      {ready && nNeed > 0 && filter !== "tindakan" && (
+        <Alert tone="warning" title={`${nNeed} permintaan perlu tindakan Anda`}
+          action={<button className="btn-primary" onClick={() => setFilter("tindakan")}>Tampilkan</button>}>
+          {owner ? "Ada permintaan barang yang menunggu untuk Anda proses." : "Ada barang yang sudah dikirim dan menunggu konfirmasi penerimaan Anda."}
+        </Alert>
+      )}
 
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Saring permintaan">
         {([["semua", `Semua (${reqs.length})`], ["tindakan", `Perlu tindakan (${nNeed})`], ["selesai", `Selesai (${reqs.filter(done).length})`]] as [Filter, string][]).map(([k, t]) => (
@@ -364,7 +375,7 @@ function Requests({ me }: { me: Me }) {
 
       {!ready && <p className="text-sm text-muted">Memuat…</p>}
       {ready && !shown.length && (
-        <div className="card p-6 text-center">
+        <div className="card p-8 text-center">
           <p className="font-semibold">{filter === "semua" ? "Belum ada permintaan barang" : "Tidak ada permintaan pada saringan ini"}</p>
           {filter === "semua" && !owner && <p className="mt-1 text-sm text-muted">Tekan “Permintaan baru” di atas untuk meminta barang ke kepala toko.</p>}
         </div>
@@ -379,5 +390,5 @@ function Requests({ me }: { me: Me }) {
 export default function Permintaan() {
   return <Shell>{(me) => ["kepala_toko", "kepala_cabang", "gudang"].includes(me.session.role)
     ? <Requests me={me} />
-    : <p className="text-sm text-muted">Halaman permintaan barang hanya untuk kepala toko, kepala cabang, dan gudang.</p>}</Shell>;
+    : <Alert tone="info">Halaman permintaan barang hanya untuk kepala toko, kepala cabang, dan gudang.</Alert>}</Shell>;
 }
