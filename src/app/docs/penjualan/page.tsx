@@ -25,6 +25,9 @@ export default function Penjualan() {
       <h2>Mengelola produk dan stok</h2>
       <ul>
         <li>Halaman <code>Gudang</code> berisi form tambah produk (SKU boleh kosong, nama, harga, stok awal) dan daftar produk.</li>
+        <li>Setiap produk bisa diberi <strong>foto</strong>: pilih atau ambil foto saat menambah produk, atau lewat tombol <code>Tambah foto</code> / <code>Ganti foto</code> di daftar. Foto otomatis dikecilkan menjadi persegi kecil (±240 piksel) dan tampil di kartu produk kasir dan daftar gudang. Tombol <code>Hapus foto</code> menghapus fotonya saja.</li>
+        <li>Kolom <strong>Cari</strong> di Gudang dan Kasir mencari nama atau SKU. Huruf besar/kecil tidak dibedakan, dan semua kata harus cocok (&quot;beras pre&quot; menemukan &quot;Beras Premium&quot;). Di Gudang ada saringan <code>Stok menipis</code> dan <code>Tanpa foto</code>.</li>
+        <li>Di Kasir, pemindai barcode yang mengetik SKU lalu menekan Enter langsung menambahkan produk ke keranjang. Jika hanya satu produk yang cocok dengan pencarian, Enter juga menambahkannya.</li>
         <li><code>+10 stok</code> menambah stok cepat. <code>Ubah stok</code> dan <code>Ubah harga</code> mengganti nilainya langsung.</li>
         <li>Stok di bawah 5 ditandai merah.</li>
         <li>Kepala toko bisa memilih cabang di bagian atas untuk melihat dan mengubah stok cabang lain. Pilihan cabang diingat di browser.</li>

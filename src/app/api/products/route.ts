@@ -27,11 +27,12 @@ export const POST = handle(async (req) => {
     if (!ok) throw new HttpError(400, "Cabang tidak valid");
     branchId = b.branchId;
   }
+  const id = uid();
   await add("products", {
-    id: uid(), storeId: s.storeId, branchId, sku: String(b.sku || "").trim(), name,
-    price: String(price), stock: String(stock), createdAt: now(), unit,
+    id, storeId: s.storeId, branchId, sku: String(b.sku || "").trim(), name,
+    price: String(price), stock: String(stock), createdAt: now(), unit, imageVer: "",
   });
-  return { ok: true };
+  return { ok: true, id };
 });
 
 export const PATCH = handle(async (req) => {

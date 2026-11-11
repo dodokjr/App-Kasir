@@ -22,6 +22,7 @@ const ICONS: Record<string, ReactNode> = {
   gudang: <><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></>,
   keuangan: <><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></>,
   monitor: <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />,
+  permintaan: <><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></>,
   pengaturan: <><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3" /><path d="M14 2v4M8 10v4M16 18v4" /></>,
   pesan: <><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></>,
   keluar: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></>,
@@ -85,7 +86,7 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
   const nav = [
     { href: "/dashboard", t: "Dashboard", i: "dashboard" },
     ...(role === "kasir" || head ? [{ href: "/kasir", t: "Kasir", i: "kasir" }] : []),
-    ...(role === "gudang" || head ? [{ href: "/gudang", t: "Gudang", i: "gudang" }] : []),
+    ...(role === "gudang" || head ? [{ href: "/gudang", t: "Gudang", i: "gudang" }, { href: "/permintaan", t: "Permintaan barang", i: "permintaan" }] : []),
     ...(head ? [{ href: "/keuangan", t: "Keuangan", i: "keuangan" }, { href: "/monitor", t: "Pantau kasir", i: "monitor" }] : []),
     ...(role === "developer" || role === "admin" ? [{ href: "/pesan", t: "Pesan", i: "pesan" }] : []),
     ...(role === "kepala_toko" ? [{ href: "/pengaturan", t: "Pengaturan", i: "pengaturan" }] : []),

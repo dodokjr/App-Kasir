@@ -310,6 +310,7 @@ function Team({ me }: { me: Me }) {
               ["/kasir", "kasir", "Buka kasir", "Mulai berjualan"],
               ["/gudang", "gudang", "Gudang", "Produk dan stok"],
               ["/keuangan", "keuangan", "Keuangan", "Penjualan dan pengeluaran"],
+              ["/permintaan", "permintaan", "Permintaan barang", owner ? "Permintaan dari cabang" : "Minta barang ke kepala toko"],
               ["/monitor", "monitor", "Pantau kasir", "Online atau offline"],
               ...(owner ? [["/pengaturan", "pengaturan", "Pengaturan", "Struk, PPN, pembayaran"]] : []),
             ].map(([href, ic, t, d]) => (
@@ -477,6 +478,7 @@ function GudangHome({ me }: { me: Me }) {
       <section className="card space-y-4 p-6">
         <div><div className="text-lg font-bold">Kelola produk dan stok</div><p className="mt-1 text-muted">Tambah produk baru, ubah harga, dan perbarui stok cabang Anda.</p></div>
         <Link href="/gudang" className="btn-primary btn-lg w-full">Buka gudang</Link>
+        <Link href="/permintaan" className="btn-ghost btn-lg w-full">Minta barang ke kepala toko</Link>
       </section>
     </Welcome>
   );

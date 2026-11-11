@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 export const DOC_GROUPS: { title: string; items: [string, string][] }[] = [
   { title: "Mulai", items: [["/docs", "Memulai"], ["/docs/peran", "Peran dan hak akses"]] },
-  { title: "Berjualan", items: [["/docs/penjualan", "Penjualan, stok, dan struk"], ["/docs/jenis-usaha", "Jenis usaha, pembayaran, PPN, pantau kasir"], ["/docs/tutup-kasir", "Buka dan tutup kasir"]] },
+  { title: "Berjualan", items: [["/docs/penjualan", "Penjualan, stok, dan struk"], ["/docs/jenis-usaha", "Jenis usaha, pembayaran, PPN, pantau kasir"], ["/docs/permintaan-barang", "Permintaan barang ke kepala toko"], ["/docs/tutup-kasir", "Buka dan tutup kasir"]] },
   { title: "Laporan dan pengaturan", items: [["/docs/keuangan", "Keuangan"], ["/docs/struk-tema", "Struk kustom dan mode gelap"], ["/docs/instalasi", "Instalasi dan Google Sheets"]] },
 ];
 export const DOC_FLAT = DOC_GROUPS.flatMap((g) => g.items);

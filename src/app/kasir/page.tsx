@@ -7,14 +7,16 @@ import BranchSelect from "@/components/BranchSelect";
 import { useBranch } from "@/lib/useBranch";
 import { api, rp, tgl } from "@/lib/client";
 import { useOnline } from "@/lib/useOnline";
+import ProductThumb from "@/components/ProductThumb";
+import { matches } from "@/lib/search";
 import {
-  CASH_KEY, DEFAULT_TAX, GROUP_LABEL, ORDER_TYPES, calcTax, fmtQty, fmtRate, isCash, lineTotal, parseQty, roundQty, stepOf, unitOf, validQty,
+  CASH_KEY, DEFAULT_TAX, GROUP_LABEL, ORDER_TYPES, calcTax, fmtQty, fmtRate, isCash, isFoodDelivery, lineTotal, parseQty, roundQty, stepOf, unitOf, validQty,
   type BusinessType, type PayMethod, type TaxConfig,
 } from "@/lib/business";
 import type { Me, ReceiptData } from "@/lib/types";
 import type { ShiftOut } from "@/lib/shiftTypes";
 
-type P = { id: string; name: string; sku: string; price: string; stock: string; unit: string };
+type P = { id: string; name: string; sku: string; price: string; stock: string; unit: string; imageVer?: string };
 type Line = { q: string; note: string };
 type R = Record<string, string>;
 
@@ -148,6 +150,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     const [list, pm, st] = await Promise.all([
@@ -163,7 +166,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
   }, [branchId]);
   useEffect(() => { load().catch((x) => setErr((x as Error).message)); }, [load]);
 
-  const shown = useMemo(() => products.filter((p) => (p.name + p.sku).toLowerCase().includes(q.toLowerCase())), [products, q]);
+  const shown = useMemo(() => products.filter((p) => matches(q, p.name, p.sku)), [products, q]);
   const lines = products.filter((p) => cart[p.id]).map((p) => {
     const step = stepOf(p.unit), qty = parseQty(cart[p.id].q);
     const stock = Number(p.stock);
@@ -177,6 +180,9 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
   const change = Number(paid || 0) - total;
   const hasBad = lines.some((l) => l.bad);
   const cur = methods.find((m) => m.key === method);
+  // Pesanan dari ShopeeFood/GoFood/GrabFood otomatis dibungkus dan tidak memakai nomor meja
+  const food = fnb && isFoodDelivery(method);
+  const effType = food ? "take_away" : orderType;
 
   const setQty = (p: P, qty: number) => {
     const n = Math.max(0, Math.min(roundQty(qty), Number(p.stock)));
@@ -194,7 +200,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
         body: {
           items: lines.map((l) => ({ productId: l.p.id, qty: l.qty, note: l.note })),
           paymentKey: method, paid: cash ? Number(paid) : total, paymentRef: ref,
-          ...(fnb ? { orderType, tableNo, customerName: customer } : {}),
+          ...(fnb ? { orderType: effType, tableNo: effType === "dine_in" ? tableNo : "", customerName: customer } : {}),
         },
       });
       setReceipt(r); setCart({}); setPaid(""); setRef(""); setTableNo(""); setCustomer(""); load(); reload();
@@ -217,21 +223,39 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
       <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
         {receipt && <ReceiptModal receipt={receipt} fresh onClose={() => setReceipt(null)} />}
         <section className="space-y-3">
-          <input className="input" placeholder="Cari nama atau SKU produk" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari produk" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="relative">
+            <input type="text" className="input py-2.5 pr-10 text-base" placeholder="Cari produk, atau scan barcode" aria-label="Cari produk" value={q}
+              onChange={(e) => { setQ(e.target.value); setFlash(""); }}
+              onKeyDown={(e) => {
+                // Pemindai barcode mengetik kode SKU lalu menekan Enter: tambahkan langsung ke keranjang
+                if (e.key !== "Enter" || !q.trim()) return;
+                e.preventDefault();
+                const hit = products.find((p) => p.sku && p.sku.toLowerCase() === q.trim().toLowerCase()) ?? (shown.length === 1 ? shown[0] : undefined);
+                if (!hit) { setFlash("Produk tidak ditemukan"); return; }
+                if (Number(hit.stock) < stepOf(hit.unit) - 1e-9) { setFlash(`${hit.name}: stok habis`); return; }
+                add(hit); setQ(""); setFlash(`Ditambahkan: ${hit.name}`); setTimeout(() => setFlash(""), 2500);
+              }} />
+            {q && <button type="button" className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xl leading-none text-muted hover:text-ink" aria-label="Hapus pencarian" onClick={() => setQ("")}>×</button>}
+          </div>
+          <p className="min-h-[1.25rem] text-sm text-muted" aria-live="polite">{flash || (q ? `${shown.length} produk cocok dengan “${q}”` : `${products.length} produk`)}</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {shown.map((p) => {
               const out = Number(p.stock) < stepOf(p.unit) - 1e-9;
               const u = unitOf(p.unit).label;
               return (
                 <button key={p.id} disabled={out} onClick={() => add(p)}
-                  className="card text-left transition hover:border-accent disabled:opacity-50">
-                  <div className="text-sm font-medium">{p.name}</div>
-                  <div className="mt-1 font-mono text-sm text-link">{rp(p.price)}<span className="text-xs text-muted"> / {u}</span></div>
-                  <div className="mt-1 text-xs text-muted">{out ? "Stok habis" : `Stok ${fmtQty(Number(p.stock))} ${u}`}</div>
+                  className="card flex flex-col gap-2 p-2.5 text-left transition hover:border-accent disabled:opacity-50">
+                  <ProductThumb id={p.id} ver={p.imageVer} name={p.name} square />
+                  <div className="px-0.5">
+                    <div className="text-sm font-semibold leading-snug">{p.name}</div>
+                    <div className="mt-1 font-mono text-sm text-link">{rp(p.price)}<span className="text-xs text-muted"> / {u}</span></div>
+                    <div className="mt-0.5 text-xs text-muted">{out ? "Stok habis" : `Stok ${fmtQty(Number(p.stock))} ${u}`}</div>
+                  </div>
                 </button>
               );
             })}
-            {!shown.length && <p className="col-span-full text-sm text-muted">Belum ada produk. Minta bagian gudang menambahkan produk.</p>}
+            {!products.length && <p className="col-span-full text-sm text-muted">Belum ada produk. Minta bagian gudang menambahkan produk.</p>}
+            {!!products.length && !shown.length && <p className="col-span-full text-sm text-muted">Tidak ada produk yang cocok dengan “{q}”.</p>}
           </div>
         </section>
 
@@ -242,15 +266,16 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
             <div className="space-y-3 rounded-md border border-line p-3">
               <div className="flex gap-2" role="radiogroup" aria-label="Jenis pesanan">
                 {ORDER_TYPES.map((o) => (
-                  <button key={o.key} type="button" role="radio" aria-checked={orderType === o.key} onClick={() => setOrderType(o.key)}
-                    className={`flex-1 ${orderType === o.key ? "btn-primary" : "btn-ghost"}`}>{o.label}</button>
+                  <button key={o.key} type="button" role="radio" aria-checked={effType === o.key} disabled={food} onClick={() => setOrderType(o.key)}
+                    className={`flex-1 ${effType === o.key ? "btn-primary" : "btn-ghost"}`}>{o.label}</button>
                 ))}
               </div>
+              {food && <p className="rounded-lg bg-sun/20 px-3 py-2 text-sm font-medium" role="status">Pesanan {cur?.label} otomatis dibungkus, jadi tidak perlu nomor meja.</p>}
               <div className="grid grid-cols-2 gap-3">
-                {orderType === "dine_in" && (
+                {effType === "dine_in" && (
                   <div><label className="label" htmlFor="tbl">Nomor meja</label><input id="tbl" maxLength={10} className="input" value={tableNo} onChange={(e) => setTableNo(e.target.value)} /></div>
                 )}
-                <div className={orderType === "dine_in" ? "" : "col-span-2"}><label className="label" htmlFor="cust">Nama customer</label><input id="cust" maxLength={40} className="input" placeholder="Kosong = Customer #nomor" value={customer} onChange={(e) => setCustomer(e.target.value)} /></div>
+                <div className={effType === "dine_in" ? "" : "col-span-2"}><label className="label" htmlFor="cust">{food ? "Nama pemesan (sesuai aplikasi)" : "Nama customer"}</label><input id="cust" maxLength={40} className="input" placeholder="Kosong = Customer #nomor" value={customer} onChange={(e) => setCustomer(e.target.value)} /></div>
               </div>
               <p className="text-xs text-muted">Nomor pesanan (#01, #02, …) dibuat otomatis per cabang dan mulai dari #01 lagi setiap hari.</p>
             </div>

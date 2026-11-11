@@ -23,7 +23,9 @@ export function inScope(s: Session, r: Row) {
 export function handle(fn: (req: Request) => Promise<unknown>) {
   return async (req: Request) => {
     try {
-      return NextResponse.json(await fn(req));
+      const out = await fn(req);
+      // Respons mentah (misalnya gambar) diteruskan apa adanya
+      return out instanceof Response ? out : NextResponse.json(out);
     } catch (e) {
       if (e instanceof HttpError) return NextResponse.json({ error: e.message }, { status: e.status });
       if (isQuotaError(e)) {
