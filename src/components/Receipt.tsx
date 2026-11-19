@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { ReceiptData } from "@/lib/types";
 import { rp, tgl } from "@/lib/client";
 import { DEFAULT_SETTINGS, type ReceiptSettings } from "@/lib/receiptSettings";
-import { fmtQty, isCash, orderTypeLabel } from "@/lib/business";
+import { fmtQty, fmtRate, isCash, isFoodDelivery, orderTypeLabel } from "@/lib/business";
 
 // Kertas struk selalu putih (juga di mode gelap) agar sama dengan hasil cetak.
 // `kind` dipakai CSS cetak untuk memilih struk customer / dapur.
@@ -58,7 +58,11 @@ export default function Receipt({ r, settings = DEFAULT_SETTINGS }: { r: Receipt
         </div>
       ))}
       <Dash />
+      {(r.discountAmount > 0 || (r.taxAmount > 0 && r.taxMode === "exclusive")) && <Row a="Subtotal" b={rp(r.subtotal)} />}
+      {r.discountAmount > 0 && <Row a={`Diskon${r.discountName ? ` (${r.discountName})` : ""}`} b={`-${rp(r.discountAmount)}`} />}
+      {r.taxAmount > 0 && r.taxMode === "exclusive" && <Row a={`PPN ${fmtRate(r.taxRate)}%`} b={rp(r.taxAmount)} />}
       <Row a="Total" b={rp(r.total)} bold />
+      {r.taxAmount > 0 && r.taxMode === "inclusive" && <Row a={`Termasuk PPN ${fmtRate(r.taxRate)}%`} b={rp(r.taxAmount)} />}
       <Row a="Pembayaran" b={r.paymentLabel} />
       {r.paymentRef && <Row a="Ref" b={r.paymentRef} />}
       {s.showPayment && isCash(r.paymentKey) && <><Row a="Bayar" b={rp(r.paid)} /><Row a="Kembali" b={rp(r.change)} /></>}
@@ -76,6 +80,7 @@ export function KitchenTicket({ r, settings = DEFAULT_SETTINGS }: { r: ReceiptDa
       <Dash />
       {r.orderNo && <div className="text-center text-2xl font-bold leading-8">#{r.orderNo}</div>}
       <Row a="Jenis" b={orderTypeLabel(r.orderType) || "-"} bold />
+      {isFoodDelivery(r.paymentKey) && <Row a="Dari" b={r.paymentLabel + (r.paymentRef ? ` ${r.paymentRef}` : "")} bold />}
       {r.tableNo && <Row a="Meja" b={<span className="text-base font-bold">{r.tableNo}</span>} bold />}
       {customerLabel(r) && <Row a="Customer" b={customerLabel(r)} />}
       <Row a="Waktu" b={tgl(r.createdAt)} />

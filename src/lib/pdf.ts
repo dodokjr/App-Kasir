@@ -1,6 +1,6 @@
 import type { ReceiptData } from "./types";
 import { DEFAULT_SETTINGS, type ReceiptSettings } from "./receiptSettings";
-import { fmtQty, fmtRate, isCash, orderTypeLabel } from "./business";
+import { fmtQty, fmtRate, isCash, isFoodDelivery, orderTypeLabel } from "./business";
 
 const rp = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const when = (iso: string) => new Date(iso).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" });
@@ -66,7 +66,9 @@ export async function downloadReceiptPdf(r: ReceiptData, s: ReceiptSettings = DE
       t.lr(`${fmtQty(i.qty)} ${i.unit === "pcs" ? "x" : i.unit + " x"} ${rp(i.price)}`, rp(i.subtotal));
     });
     t.rule();
-    if (r.taxAmount > 0 && r.taxMode === "exclusive") { t.lr("Subtotal", rp(r.subtotal)); t.lr(`PPN ${fmtRate(r.taxRate)}%`, rp(r.taxAmount)); }
+    if (r.discountAmount > 0 || (r.taxAmount > 0 && r.taxMode === "exclusive")) t.lr("Subtotal", rp(r.subtotal));
+    if (r.discountAmount > 0) t.lr(`Diskon${r.discountName ? ` (${r.discountName})` : ""}`, `-${rp(r.discountAmount)}`);
+    if (r.taxAmount > 0 && r.taxMode === "exclusive") t.lr(`PPN ${fmtRate(r.taxRate)}%`, rp(r.taxAmount));
     t.lr("Total", rp(r.total), true);
     if (r.taxAmount > 0 && r.taxMode === "inclusive") t.lr(`Termasuk PPN ${fmtRate(r.taxRate)}%`, rp(r.taxAmount));
     t.lr("Pembayaran", r.paymentLabel);
@@ -84,6 +86,7 @@ export async function downloadKitchenPdf(r: ReceiptData, s: ReceiptSettings = DE
     t.skip(2); t.rule();
     if (r.orderNo) { t.center(`#${r.orderNo}`, 20, true); t.skip(2); }
     t.lr("Jenis", orderTypeLabel(r.orderType) || "-", true);
+    if (isFoodDelivery(r.paymentKey)) t.lr("Dari", r.paymentLabel + (r.paymentRef ? ` ${r.paymentRef}` : ""), true);
     if (r.tableNo) t.lr("Meja", r.tableNo, true, 11);
     const who = r.customerName || (r.orderNo ? `Customer #${r.orderNo}` : "");
     if (who) t.lr("Customer", who);

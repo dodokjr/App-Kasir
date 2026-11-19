@@ -114,3 +114,31 @@ export const looksLikeFoodApp = (label: string) => FOOD_NAMES.includes(label.toL
 /** Apakah metode ini boleh dipakai di jenis usaha tersebut */
 export const methodAllowed = (biz: BusinessType, key: string, label = "") =>
   biz === "fnb" || !(isFoodDelivery(key) || looksLikeFoodApp(label));
+
+// ---- Diskon ----
+export type DiscountType = "percent" | "nominal";
+export type DiscountInput = { type: DiscountType; value: number };
+export const DISCOUNT_TYPES: { key: DiscountType; label: string }[] = [{ key: "percent", label: "Persen (%)" }, { key: "nominal", label: "Nominal (Rp)" }];
+/** Diskon siap pakai yang dibuat kepala toko */
+export type DiscountPreset = {
+  id: string; name: string; type: DiscountType; value: number; minSubtotal: number; validFrom: string; validTo: string; active: boolean;
+};
+
+/** Jumlah diskon dalam rupiah utuh, tidak pernah lebih dari subtotal atau kurang dari 0 */
+export function calcDiscount(subtotal: number, d?: DiscountInput | null) {
+  if (!d || !(d.value > 0) || !(subtotal > 0)) return 0;
+  const raw = d.type === "percent" ? Math.round((subtotal * Math.min(d.value, 100)) / 100) : Math.round(d.value);
+  return Math.max(0, Math.min(raw, subtotal));
+}
+/** Urutan hitung: subtotal - diskon = dasar, lalu PPN dihitung dari dasar. Sama persis di browser dan server */
+export function calcTotals(subtotal: number, d: DiscountInput | null | undefined, t: TaxConfig) {
+  const discount = calcDiscount(subtotal, d);
+  const net = subtotal - discount;
+  const { tax, total } = calcTax(net, t);
+  return { subtotal, discount, net, tax, total };
+}
+/** Apakah diskon siap pakai berlaku untuk subtotal dan tanggal (YYYY-MM-DD, WIB) ini */
+export function discountUsable(d: DiscountPreset, subtotal: number, today: string) {
+  return d.active && subtotal >= d.minSubtotal && (!d.validFrom || today >= d.validFrom) && (!d.validTo || today <= d.validTo) && subtotal > 0;
+}
+export const discountLabel = (d: DiscountInput) => (d.type === "percent" ? `${String(d.value).replace(".", ",")}%` : `Rp ${Math.round(d.value).toLocaleString("id-ID")}`);

@@ -5,6 +5,7 @@ import type { ReceiptData } from "@/lib/types";
 import { api } from "@/lib/client";
 import { downloadReceiptPdf, downloadKitchenPdf } from "@/lib/pdf";
 import { DEFAULT_SETTINGS, type ReceiptSettings } from "@/lib/receiptSettings";
+import { loadReceiptSettings, saveReceiptSettings } from "@/lib/offline";
 
 type Which = "customer" | "kitchen" | "both";
 
@@ -24,7 +25,11 @@ export default function ReceiptModal({ receipt, onClose, fresh = false }: { rece
     window.print();
   };
 
-  useEffect(() => { api<ReceiptSettings>("/api/receipt-settings").then(setSettings).catch(() => setSettings(DEFAULT_SETTINGS)); }, []);
+  // Pengaturan struk disimpan di perangkat, supaya struk offline tetap memakai nama, alamat, dan footer toko
+  useEffect(() => {
+    api<ReceiptSettings>("/api/receipt-settings").then((r) => { saveReceiptSettings(r); setSettings(r); })
+      .catch(() => setSettings(loadReceiptSettings<ReceiptSettings>() ?? DEFAULT_SETTINGS));
+  }, []);
   useEffect(() => {
     if (fresh && settings?.autoPrint && !printed.current) { printed.current = true; setTimeout(() => print(fnb ? "both" : "customer"), 300); }
   }, [settings, fresh, fnb]);

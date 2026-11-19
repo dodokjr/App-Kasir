@@ -29,6 +29,7 @@ export default function JenisUsaha() {
       <h2>Metode pembayaran</h2>
       <p>Cash dan transfer bank selalu ada dan tidak bisa dinonaktifkan. Kepala toko menambah atau mematikan metode lain di Pengaturan: QRIS, ShopeeFood, GoFood, GrabFood, GoSend, Grab Barang, paket, atau nama bebas (misalnya OVO atau Dana). Metode tidak dihapus, hanya dinonaktifkan, agar transaksi lama tetap terbaca.</p>
       <ul>
+        <li><strong>ShopeeFood, GoFood, dan GrabFood hanya untuk toko F&amp;B.</strong> Di toko retail, sembako, dan lainnya, ketiganya tidak muncul di Pengaturan maupun di kasir. Di toko F&amp;B, pesanan lewat ketiganya otomatis dibungkus: pilihan makan di tempat dan nomor meja dinonaktifkan, dan struk dapur menampilkan asal pesanannya (misalnya &quot;Dari GoFood&quot;).</li>
         <li>Cash: isi uang diterima, kembalian dihitung otomatis.</li>
         <li>Metode lain: dibayar pas sesuai total. Nomor referensi atau nomor pesanan platform boleh diisi.</li>
         <li>Saat tutup kasir, hanya penjualan <strong>tunai</strong> yang masuk hitungan uang di laci. Laporan juga menampilkan total per metode. Halaman Keuangan punya tabel per metode pembayaran.</li>
@@ -49,10 +50,10 @@ export default function JenisUsaha() {
       <ul>
         <li>Online berarti aplikasi terbuka di perangkat kasir dan terhubung internet. Kasir dianggap offline bila tidak ada sinyal selama sekitar 2 menit, atau setelah keluar (logout).</li>
         <li>Kasir yang masih dibuka tetapi offline ditandai <strong>Perlu dicek</strong>.</li>
-        <li>Saat offline, kasir melihat peringatan dan tombol bayar dinonaktifkan sampai koneksi kembali.</li>
+        <li>Saat offline, halaman Kasir tetap bisa dipakai dalam <strong>mode offline</strong>. Lihat panduan Diskon dan mode offline.</li>
       </ul>
       <blockquote>
-        <p><strong>Penting:</strong> aplikasi belum menyimpan transaksi saat offline untuk dikirim belakangan. Jika internet putus, tunggu sampai tersambung lagi sebelum menekan tombol bayar.</p>
+        <p><strong>Catatan:</strong> kasir yang offline tetap bisa berjualan, tetapi tidak muncul sebagai &quot;online&quot; di halaman ini. Kasir yang masih dibuka dan offline ditandai &quot;Perlu dicek&quot;, lalu transaksinya masuk setelah internet kembali.</p>
       </blockquote>
     </>
   );

@@ -19,6 +19,7 @@ export async function buildReceipt(tx: Row): Promise<ReceiptData> {
     })),
     total: Number(tx.total), paid: Number(tx.paid), change: Number(tx.change),
     subtotal: tx.subtotal ? Number(tx.subtotal) : Number(tx.total),
+    discountName: tx.discountName || "", discountAmount: Number(tx.discountAmount) || 0,
     taxAmount: Number(tx.taxAmount) || 0, taxRate: Number(tx.taxRate) || 0, taxMode: tx.taxMode || "",
     businessType: normBusiness(store?.businessType),
     // Transaksi lama (sebelum ada metode pembayaran) dianggap tunai

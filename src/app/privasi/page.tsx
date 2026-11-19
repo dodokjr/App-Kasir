@@ -20,13 +20,14 @@ export default function Privasi() {
           <>
             <ul>
               <li><strong>Data akun:</strong> nama, alamat email, peran, dan password. Password disimpan hanya dalam bentuk hash (bcrypt), bukan teks asli.</li>
-              <li><strong>Data toko:</strong> nama toko, jenis usaha, nama cabang, dan nama jalan cabang.</li>
+              <li><strong>Data toko:</strong> nama toko, jenis usaha, nama cabang, nama jalan cabang, serta titik lokasi (koordinat) cabang bila Anda mengaturnya di halaman Peta toko, dan target penjualan bulanan yang ditetapkan kepala toko.</li>
               <li><strong>Data usaha:</strong> produk (termasuk foto produk berukuran kecil yang Anda unggah), satuan, harga, stok, transaksi beserta nama kasir, waktu, metode pembayaran, nomor referensi pembayaran yang diisi kasir, PPN, dan jumlah pembayaran, catatan buka dan tutup kasir (modal awal, uang yang dihitung, selisih, dan catatan), pengeluaran toko, catatan pencairan (setoran) hasil penjualan ke rekening (tanggal, nama bank, keterangan rekening yang Anda isi, dan nominal; sebaiknya tidak memuat nomor rekening lengkap), serta pengaturan struk dan PPN (nama, alamat, telepon toko, tarif).</li>
               <li><strong>Permintaan barang antar cabang:</strong> nama barang, jumlah diminta, dikirim, dan diterima, nomor resi atau nomor pengiriman, nama pengaju dan pengirim, serta catatan dan balasan di tiap permintaan.</li>
               <li><strong>Data pesanan (toko F&amp;B):</strong> nomor meja, nomor pesanan, nama customer, dan catatan menu, jika diisi oleh kasir.</li>
               <li><strong>Status aktivitas akun:</strong> waktu terakhir akun terhubung dan halaman aplikasi yang sedang dibuka, supaya kepala toko dan kepala cabang bisa melihat kasir online atau offline.</li>
               <li><strong>Pesan kontak:</strong> nama, email, subjek, dan isi pesan yang Anda kirim lewat halaman Kontak.</li>
             </ul>
+            <p>Halaman Peta toko memuat peta dan pencarian alamat dari OpenStreetMap (OpenStreetMap Foundation), sehingga browser Anda terhubung ke server mereka saat halaman itu dibuka. Lokasi perangkat hanya dibaca bila Anda menekan tombol &quot;Gunakan lokasi saya&quot;, dan hanya disimpan bila Anda menyimpannya sebagai lokasi cabang.</p>
             <p>Kami tidak meminta data pembeli. Nama customer di toko F&amp;B bersifat opsional untuk menandai pesanan, dan sebaiknya tidak diisi data yang sensitif. Struk berisi nama toko, cabang, kasir, dan rincian belanja.</p>
           </>
         ) },
@@ -37,7 +38,7 @@ export default function Privasi() {
           <p>Data disimpan di Google Sheets milik pengelola layanan dan diakses lewat Google Sheets API. Karena itu data juga tunduk pada kebijakan privasi Google sebagai penyedia infrastruktur penyimpanan.</p>
         ) },
         { id: "cookie", title: "Cookie dan penyimpanan di browser", body: (
-          <p>Kami memakai satu cookie bernama <code>sid</code> untuk menjaga Anda tetap login. Cookie ini bersifat httpOnly, berlaku 12 jam, dan dihapus saat Anda keluar. Kami juga menyimpan dua preferensi di penyimpanan lokal browser Anda: cabang yang terakhir dipilih (<code>branch</code>) dan tema terang atau gelap (<code>theme</code>). Keduanya hanya untuk kenyamanan tampilan, tidak dikirim ke server, dan bisa dihapus lewat pengaturan browser. Kami tidak memakai cookie iklan atau alat pelacak pihak ketiga.</p>
+          <p>Kami memakai satu cookie bernama <code>sid</code> untuk menjaga Anda tetap login. Cookie ini bersifat httpOnly, berlaku 12 jam, dan dihapus saat Anda keluar. Kami juga menyimpan preferensi di penyimpanan lokal browser Anda: cabang yang terakhir dipilih (<code>branch</code>) dan tema terang atau gelap (<code>theme</code>). Agar halaman Kasir bisa dipakai saat internet mati, browser juga menyimpan salinan daftar produk, harga, stok, metode pembayaran, pengaturan PPN dan diskon, pengaturan struk, data akun yang sedang masuk (nama dan peran), status kasir, serta transaksi offline yang belum terkirim. Data ini hanya ada di perangkat Anda, dikirim ke server hanya sebagai transaksi saat internet kembali, dan dibersihkan lewat pengaturan browser. Kami juga memakai service worker untuk menyimpan berkas aplikasi (bukan data) agar halaman Kasir bisa dibuka tanpa internet. Kami tidak memakai cookie iklan atau alat pelacak pihak ketiga.</p>
         ) },
         { id: "berbagi-data", title: "Berbagi data", body: (
           <p>Kami tidak menjual data Anda. Data bisa dibuka kepada pengelola layanan dan pengembang yang menjalankan sistem, kepada penyedia infrastruktur seperti Google, atau jika diwajibkan oleh hukum yang berlaku. Dalam satu toko, data dibagikan antar akun sesuai peran, misalnya kepala toko dapat melihat akun, transaksi, dan keuangan seluruh cabangnya, sedangkan kasir hanya melihat laporan kasirnya sendiri.</p>

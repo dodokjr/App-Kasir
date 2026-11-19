@@ -8,6 +8,8 @@ export type ReceiptData = {
   total: number; paid: number; change: number;
   /** Jumlah barang sebelum PPN (exclusive) atau termasuk PPN (inclusive). Transaksi lama: sama dengan total */
   subtotal: number; taxAmount: number; taxRate: number; taxMode: string;
+  /** Diskon pada transaksi ini (0 bila tidak ada). subtotal di atas adalah jumlah sebelum diskon */
+  discountName: string; discountAmount: number;
   businessType: BusinessType;
   paymentKey: string; paymentLabel: string; paymentRef: string;
   orderType: string; tableNo: string; customerName: string; orderNo: string;

@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import RegisterSW from "@/components/RegisterSW";
 import { themeScript } from "@/lib/themeScript";
 import { FeedbackProvider } from "@/components/Feedback";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className={`${sans.variable} ${mono.variable} font-sans`}>
         <FeedbackProvider>
           {children}
+          <RegisterSW />
         </FeedbackProvider>
       </body>
     </html>

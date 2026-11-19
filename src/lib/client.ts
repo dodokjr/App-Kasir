@@ -1,11 +1,28 @@
+/** Galat dari server (status HTTP) atau jaringan (status 0, network = true) */
+export class ApiError extends Error {
+  status: number; network: boolean;
+  constructor(message: string, status: number, network = false) { super(message); this.status = status; this.network = network; }
+}
+export const isNetworkError = (e: unknown) => e instanceof ApiError && e.network;
+
+// Kabar koneksi untuk useOnline: navigator.onLine bisa "true" padahal internet mati, jadi permintaan yang gagal ikut dihitung
+function netEvent(ok: boolean) { if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("kt-net", { detail: ok })); }
+
 export async function api<T = any>(url: string, init?: { method?: string; body?: unknown }): Promise<T> {
-  const r = await fetch(url, {
-    method: init?.method,
-    headers: { "Content-Type": "application/json" },
-    body: init?.body ? JSON.stringify(init.body) : undefined,
-  });
+  let r: Response;
+  try {
+    r = await fetch(url, {
+      method: init?.method,
+      headers: { "Content-Type": "application/json" },
+      body: init?.body ? JSON.stringify(init.body) : undefined,
+    });
+  } catch {
+    netEvent(false);
+    throw new ApiError("Tidak ada koneksi internet", 0, true);
+  }
+  netEvent(true);
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Permintaan gagal");
+  if (!r.ok) throw new ApiError(d.error || "Permintaan gagal", r.status);
   return d as T;
 }
 export const rp = (n: number | string) => "Rp " + Number(n).toLocaleString("id-ID");

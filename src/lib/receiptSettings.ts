@@ -1,5 +1,5 @@
 import type { ReceiptData } from "./types";
-import { calcTax, type TaxConfig } from "./business";
+import { calcTotals, type TaxConfig } from "./business";
 
 export type ReceiptSettings = {
   storeName: string; address: string; phone: string; header: string; footer: string;
@@ -18,7 +18,7 @@ export const SAMPLE_RECEIPT: ReceiptData = {
     { name: "Kopi susu 250 ml", price: 18000, qty: 2, subtotal: 36000, unit: "porsi", note: "kurang manis" },
     { name: "Roti cokelat", price: 12000, qty: 1, subtotal: 12000, unit: "porsi", note: "" },
   ],
-  total: 48000, paid: 50000, change: 2000, subtotal: 48000, taxAmount: 0, taxRate: 0, taxMode: "",
+  total: 48000, paid: 50000, change: 2000, subtotal: 48000, taxAmount: 0, taxRate: 0, taxMode: "", discountName: "", discountAmount: 0,
   businessType: "fnb", paymentKey: "cash", paymentLabel: "Cash", paymentRef: "",
   orderType: "dine_in", tableNo: "5", customerName: "Budi", orderNo: "01",
 };
@@ -37,7 +37,7 @@ export const sampleFor = (type: ReceiptData["businessType"]): ReceiptData =>
 // Terapkan pengaturan PPN ke struk contoh agar pratinjau sama dengan hasil nyata
 export function withTax(r: ReceiptData, t: TaxConfig): ReceiptData {
   const sub = r.items.reduce((a, i) => a + i.subtotal, 0);
-  const c = calcTax(sub, t);
+  const c = calcTotals(sub, null, t);
   const paid = Math.ceil(c.total / 10000) * 10000;
-  return { ...r, subtotal: sub, taxAmount: c.tax, taxRate: t.enabled ? t.rate : 0, taxMode: t.enabled ? t.mode : "", total: c.total, paid, change: paid - c.total };
+  return { ...r, subtotal: sub, discountName: "", discountAmount: 0, taxAmount: c.tax, taxRate: t.enabled ? t.rate : 0, taxMode: t.enabled ? t.mode : "", total: c.total, paid, change: paid - c.total };
 }

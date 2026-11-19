@@ -1,178 +1,118 @@
-
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api } from "@/lib/client";
 import AuthShell from "@/components/AuthShell";
 import PasswordInput from "@/components/PasswordInput";
+import { AuthStyles, Toast, Field, SubmitButton, StrengthMeter, EMAIL_RE, suggestEmail } from "@/components/AuthBits";
 
-const TYPES = [
+const TYPES: { v: string; label: string; hint: string; example: string; icon: ReactNode }[] = [
   {
     v: "retail",
     label: "Retail",
     hint: "Toko, minimarket, butik",
+    example: "Toko Maju Jaya",
+    icon: (<><path d="M6 7h12l1 13H5L6 7Z" /><path d="M9 7a3 3 0 0 1 6 0" /></>),
   },
   {
     v: "fnb",
     label: "F&B",
     hint: "Kafe, resto, warung",
+    example: "Warung Bu Tini",
+    icon: (<><path d="M5 8h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V8Z" /><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3v2M12 3v2" /></>),
   },
 ];
+
+type Form = { name: string; email: string; password: string; storeName: string; businessType: string };
+type Key = "name" | "email" | "password" | "storeName";
+
+const validators: Record<Key, (v: string) => string> = {
+  name: (v) => (v.trim() ? "" : "Nama wajib diisi."),
+  email: (v) =>
+    !v.trim() ? "Email wajib diisi." : !EMAIL_RE.test(v.trim()) ? "Format email belum benar. Contoh: nama@toko.com" : "",
+  password: (v) => (!v ? "Password wajib diisi." : v.length < 8 ? "Password minimal 8 karakter." : ""),
+  storeName: (v) => (v.trim() ? "" : "Nama toko wajib diisi."),
+};
+const ORDER: Key[] = ["name", "email", "password", "storeName"];
+const IDS: Record<Key, string> = { name: "name", email: "email", password: "pw", storeName: "store" };
+
+const Divider = ({ children }: { children: ReactNode }) => (
+  <div className="flex items-center gap-3 pb-1 pt-3 text-sm font-semibold">
+    {children}
+    <span className="h-px flex-1 bg-current opacity-10" />
+  </div>
+);
 
 export default function Register() {
   const router = useRouter();
 
-  const [f, setF] = useState({
-    name: "",
-    email: "",
-    password: "",
-    storeName: "",
-    businessType: "retail",
-  });
-
-  const [err, setErr] = useState("");
+  const [f, setF] = useState<Form>({ name: "", email: "", password: "", storeName: "", businessType: "retail" });
+  const [touched, setTouched] = useState<Record<Key, boolean>>({ name: false, email: false, password: false, storeName: false });
+  const [serverErr, setServerErr] = useState("");
+  const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
-  // Alert otomatis hilang setelah 3,5 detik
-  useEffect(() => {
-    if (!err) return;
+  const locked = busy || done;
+  const errs = Object.fromEntries(ORDER.map((k) => [k, validators[k](f[k])])) as Record<Key, string>;
+  const shown = (k: Key) => (touched[k] ? errs[k] : "");
+  const validCount = ORDER.filter((k) => !errs[k]).length;
+  const suggestion = touched.email && !errs.email ? suggestEmail(f.email) : "";
+  const type = TYPES.find((t) => t.v === f.businessType) ?? TYPES[0];
 
-    const timer = window.setTimeout(() => {
-      setErr("");
-    }, 3500);
+  function update<K extends keyof Form>(key: K, value: Form[K]) {
+    setF((c) => ({ ...c, [key]: value }));
+    setServerErr("");
+  }
+  const touch = (k: Key) => setTouched((t) => ({ ...t, [k]: true }));
 
-    return () => window.clearTimeout(timer);
-  }, [err]);
-
-  // Update input
-  function update<K extends keyof typeof f>(
-    key: K,
-    value: (typeof f)[K]
-  ) {
-    setF((current) => ({
-      ...current,
-      [key]: value,
-    }));
-
-    setErr("");
+  function triggerShake() {
+    setShake(true);
+    window.setTimeout(() => setShake(false), 480);
   }
 
-  // Validasi dan proses registrasi
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy || done) return;
 
-    if (busy) return;
+    setServerErr("");
+    setTouched({ name: true, email: true, password: true, storeName: true });
 
-    setErr("");
-
-    const name = f.name.trim();
-    const email = f.email.trim();
-    const storeName = f.storeName.trim();
-
-    // Validasi input kosong
-    if (!name || !email || !f.password || !storeName) {
-      setErr("Semua kolom wajib diisi. Periksa kembali formulir Anda.");
+    const firstBad = ORDER.find((k) => errs[k]);
+    if (firstBad) {
+      triggerShake();
+      document.getElementById(IDS[firstBad])?.focus();
       return;
     }
 
-    // Validasi email
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailPattern.test(email)) {
-      setErr("Format email tidak valid. Masukkan email yang benar.");
-      return;
-    }
-
-    // Validasi password
-    if (f.password.length < 8) {
-      setErr("Password minimal harus terdiri dari 8 karakter.");
-      return;
-    }
-
-    // Validasi jenis usaha
-    if (!TYPES.some((type) => type.v === f.businessType)) {
-      setErr("Silakan pilih jenis usaha yang tersedia.");
+    if (!TYPES.some((t) => t.v === f.businessType)) {
+      setServerErr("Silakan pilih jenis usaha yang tersedia.");
+      triggerShake();
       return;
     }
 
     setBusy(true);
-
     try {
       await api("/api/auth/register", {
         method: "POST",
-        body: {
-          ...f,
-          name,
-          email,
-          storeName,
-        },
+        body: { ...f, name: f.name.trim(), email: f.email.trim(), storeName: f.storeName.trim() },
       });
-
+      setBusy(false);
+      setDone(true);
       router.replace("/dashboard");
     } catch (error) {
-      setErr(
-        error instanceof Error
-          ? error.message
-          : "Registrasi gagal. Silakan coba kembali."
-      );
-
+      setServerErr(error instanceof Error ? error.message : "Registrasi gagal. Silakan coba kembali.");
+      triggerShake();
       setBusy(false);
     }
   }
 
   return (
     <>
-      {/* Floating Toast Alert */}
-      {err && (
-        <div
-          key={err}
-          role="alert"
-          aria-live="assertive"
-          className="fixed left-1/2 top-5 z-[9999] flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border border-red-500/20 bg-white p-4 text-sm text-red-600 shadow-2xl shadow-black/10 dark:bg-[#1c1c25] dark:text-red-400 animate-[galaxy-toast-in_300ms_ease-out]"
-        >
-          {/* Error Icon */}
-          <svg
-            className="mt-0.5 h-5 w-5 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
-
-          {/* Error Message */}
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">Registrasi gagal</p>
-            <p className="mt-0.5 break-words">{err}</p>
-          </div>
-
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={() => setErr("")}
-            aria-label="Tutup notifikasi"
-            className="shrink-0 rounded-md p-1 opacity-60 transition hover:bg-red-500/10 hover:opacity-100"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="m18 6-12 12M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+      <AuthStyles />
+      <Toast title="Registrasi gagal" message={serverErr} onClose={() => setServerErr("")} />
 
       <AuthShell
         title="Daftarkan toko Anda"
@@ -180,162 +120,177 @@ export default function Register() {
         footer={
           <>
             Sudah punya akun?{" "}
-            <Link href="/login" className="font-semibold text-link">
-              Masuk
-            </Link>
+            <Link href="/login" className="font-semibold text-link">Masuk</Link>
           </>
         }
       >
-        <form
-          onSubmit={submit}
-          noValidate
-          className="space-y-4"
-        >
-          {/* Nama pemilik */}
-          <div>
-            <label className="label" htmlFor="name">
-              Nama Anda
-            </label>
+        <form onSubmit={submit} noValidate className={`space-y-1 ${shake ? "auth-shake" : ""}`}>
+          {/* Kemajuan pengisian */}
+          <div className="auth-rise pb-2" aria-live="polite">
+            <div className="flex gap-1.5">
+              {ORDER.map((k, i) => (
+                <span
+                  key={k}
+                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${errs[k] ? "bg-current opacity-10" : "bg-emerald-500"}`}
+                  style={{ transitionDelay: `${i * 40}ms` }}
+                />
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-muted">
+              {validCount === 4 ? "Semua sudah terisi. Tinggal daftar." : `${validCount} dari 4 kolom terisi`}
+            </p>
+          </div>
 
+          <Divider>Tentang Anda</Divider>
+
+          <Field id="name" label="Nama Anda" error={shown("name")} ok={touched.name && !errs.name} delay={40}>
             <input
               id="name"
               name="name"
               type="text"
               autoComplete="name"
               placeholder="Nama lengkap"
-              className="input"
+              className="input pr-10"
               value={f.name}
-              disabled={busy}
+              disabled={locked}
+              aria-invalid={!!shown("name")}
+              aria-describedby={shown("name") ? "name-err" : undefined}
+              data-ok={touched.name && !errs.name}
+              onBlur={() => touch("name")}
               onChange={(e) => update("name", e.target.value)}
             />
-          </div>
+          </Field>
 
-          {/* Email */}
-          <div>
-            <label className="label" htmlFor="email">
-              Email
-            </label>
-
+          <Field
+            id="email"
+            label="Email"
+            error={shown("email")}
+            ok={touched.email && !errs.email}
+            delay={80}
+            hint={
+              suggestion ? (
+                <button
+                  type="button"
+                  onClick={() => update("email", suggestion)}
+                  className="text-left font-medium text-link underline underline-offset-2"
+                >
+                  Maksud Anda {suggestion}?
+                </button>
+              ) : undefined
+            }
+          >
             <input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
               placeholder="nama@toko.com"
-              className="input"
+              className="input pr-10"
               value={f.email}
-              disabled={busy}
+              disabled={locked}
+              aria-invalid={!!shown("email")}
+              aria-describedby={shown("email") ? "email-err" : undefined}
+              data-ok={touched.email && !errs.email}
+              onBlur={() => touch("email")}
               onChange={(e) => update("email", e.target.value)}
             />
-          </div>
+          </Field>
 
-          {/* Password */}
-          <div>
-            <label className="label" htmlFor="pw">
-              Password
-            </label>
+          <Field id="pw" label="Password" error={shown("password")} delay={120}>
+            <div className="auth-pw" data-invalid={!!shown("password")} onBlur={() => touch("password")}>
+              <PasswordInput
+                id="pw"
+                autoComplete="new-password"
+                minLength={8}
+                value={f.password}
+                disabled={locked}
+                onChange={(value) => update("password", value)}
+              />
+            </div>
+            <StrengthMeter password={f.password} />
+          </Field>
 
-            <PasswordInput
-              id="pw"
-              autoComplete="new-password"
-              minLength={8}
-              value={f.password}
-              disabled={busy}
-              onChange={(value) => update("password", value)}
-            />
-
-            <p className="mt-1 text-xs text-muted">
-              Minimal 8 karakter.
-            </p>
-          </div>
-
-          <hr className="border-current opacity-10" />
-
-          {/* Nama toko */}
-          <div>
-            <label className="label" htmlFor="store">
-              Nama toko
-            </label>
-
-            <input
-              id="store"
-              name="storeName"
-              type="text"
-              placeholder="Toko Maju Jaya"
-              autoComplete="organization"
-              className="input"
-              value={f.storeName}
-              disabled={busy}
-              onChange={(e) => update("storeName", e.target.value)}
-            />
-          </div>
+          <Divider>Tentang toko</Divider>
 
           {/* Jenis usaha */}
-          <fieldset disabled={busy}>
+          <fieldset disabled={locked} className="auth-rise pb-3" style={{ animationDelay: "160ms" }}>
             <legend className="label">Jenis usaha</legend>
-
             <div className="grid grid-cols-2 gap-2">
-              {TYPES.map((type) => {
-                const selected = f.businessType === type.v;
-
+              {TYPES.map((t) => {
+                const selected = f.businessType === t.v;
                 return (
                   <label
-                    key={type.v}
-                    className={`cursor-pointer rounded-xl border p-3 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                    key={t.v}
+                    className={`relative cursor-pointer rounded-xl border p-3 transition-all duration-200 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
                       selected
                         ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 ring-1 ring-[rgb(var(--accent))]"
-                        : "border-current/15 hover:border-current/30"
+                        : "border-current/15 hover:-translate-y-0.5 hover:border-current/30"
                     }`}
                   >
                     <input
                       type="radio"
                       name="businessType"
-                      value={type.v}
+                      value={t.v}
                       checked={selected}
-                      onChange={() =>
-                        update("businessType", type.v)
-                      }
+                      onChange={() => update("businessType", t.v)}
                       className="sr-only"
                     />
-
-                    <span className="block text-sm font-semibold">
-                      {type.label}
-                    </span>
-
-                    <span className="block text-xs text-muted">
-                      {type.hint}
-                    </span>
+                    <svg
+                      className={`mb-2 h-6 w-6 transition-transform duration-200 ${selected ? "scale-110" : "opacity-60"}`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      {t.icon}
+                    </svg>
+                    <span className="block text-sm font-semibold">{t.label}</span>
+                    <span className="block text-xs text-muted">{t.hint}</span>
+                    {selected && (
+                      <svg className="auth-pop absolute right-2.5 top-2.5 h-4 w-4 text-[rgb(var(--accent))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    )}
                   </label>
                 );
               })}
             </div>
           </fieldset>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={busy}
-            className="btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {busy ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                Mendaftarkan...
-              </>
-            ) : (
-              "Daftarkan toko"
-            )}
-          </button>
+          <Field id="store" label="Nama toko" error={shown("storeName")} ok={touched.storeName && !errs.storeName} delay={200}>
+            <input
+              id="store"
+              name="storeName"
+              type="text"
+              autoComplete="organization"
+              placeholder={type.example}
+              className="input pr-10"
+              value={f.storeName}
+              disabled={locked}
+              aria-invalid={!!shown("storeName")}
+              aria-describedby={shown("storeName") ? "store-err" : undefined}
+              data-ok={touched.storeName && !errs.storeName}
+              onBlur={() => touch("storeName")}
+              onChange={(e) => update("storeName", e.target.value)}
+            />
+          </Field>
 
-          {/* Privacy */}
-          <p className="text-center text-xs text-muted">
+          <div className="auth-rise pt-1" style={{ animationDelay: "260ms" }}>
+            <SubmitButton
+              busy={busy}
+              done={done}
+              idle="Daftarkan toko"
+              working="Mendaftarkan..."
+              success="Toko terdaftar, membuka dashboard"
+            />
+          </div>
+
+          <p className="pt-3 text-center text-xs text-muted">
             Dengan mendaftar, Anda menyetujui{" "}
-            <Link
-              href="/privasi"
-              className="underline underline-offset-2"
-            >
-              Kebijakan Privasi
-            </Link>{" "}
+            <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>{" "}
             kami.
           </p>
         </form>

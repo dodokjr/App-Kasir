@@ -1,11 +1,11 @@
 import { google } from "googleapis";
 
 export const SCHEMA = {
-  stores: ["id", "name", "active", "createdAt", "businessType", "ppnEnabled", "ppnRate", "ppnMode"],
-  branches: ["id", "storeId", "name", "street", "createdAt"],
+  stores: ["id", "name", "active", "createdAt", "businessType", "ppnEnabled", "ppnRate", "ppnMode", "discountManualMax"],
+  branches: ["id", "storeId", "name", "street", "createdAt", "lat", "lng"],
   users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt"],
   products: ["id", "storeId", "branchId", "sku", "name", "price", "stock", "createdAt", "unit", "imageVer"],
-  transactions: ["id", "invoice", "storeId", "branchId", "cashierId", "cashierName", "total", "paid", "change", "createdAt", "paymentKey", "paymentLabel", "paymentRef", "orderType", "tableNo", "customerName", "orderNo", "subtotal", "taxAmount", "taxRate", "taxMode"],
+  transactions: ["id", "invoice", "storeId", "branchId", "cashierId", "cashierName", "total", "paid", "change", "createdAt", "paymentKey", "paymentLabel", "paymentRef", "orderType", "tableNo", "customerName", "orderNo", "subtotal", "taxAmount", "taxRate", "taxMode", "discountName", "discountType", "discountValue", "discountAmount", "discountNote", "clientId", "offline", "review", "syncedAt"],
   transaction_items: ["id", "transactionId", "productId", "name", "price", "qty", "subtotal", "unit", "note"],
   messages: ["id", "name", "email", "subject", "message", "createdAt", "readAt", "readBy"],
   shifts: ["id", "storeId", "branchId", "cashierId", "cashierName", "openedAt", "openingCash", "status", "closedAt", "countedCash", "expectedCash", "difference", "totalSales", "txCount", "itemsSold", "itemsJson", "note", "paymentsJson"],
@@ -16,6 +16,8 @@ export const SCHEMA = {
   stock_requests: ["id", "storeId", "branchId", "requestNo", "status", "requestedById", "requestedByName", "note", "createdAt", "updatedAt", "fromBranchId", "trackingNo", "handledByName", "handledNote", "shippedAt", "receivedAt", "receivedByName", "receiveNote", "closedAt"],
   stock_request_items: ["id", "requestId", "productId", "name", "sku", "unit", "qty", "fromProductId", "sentQty", "receivedQty"],
   stock_request_notes: ["id", "requestId", "storeId", "authorId", "authorName", "authorRole", "text", "createdAt"],
+  targets: ["id", "storeId", "branchId", "month", "amount", "updatedById", "updatedByName", "updatedAt"],
+  discounts: ["id", "storeId", "name", "type", "value", "minSubtotal", "validFrom", "validTo", "active", "createdAt"],
   payment_methods: ["id", "storeId", "key", "label", "group", "active", "createdAt"],
   presence: ["id", "storeId", "branchId", "name", "role", "lastSeen", "page"],
 } as const;
@@ -73,18 +75,31 @@ export function init() {
 // Membuat tab + header otomatis jika belum ada. Hanya 2 permintaan baca, dan hanya sekali per proses
 async function setup() {
   const s = client();
-  const meta = await s.spreadsheets.get({ spreadsheetId: sid(), fields: "sheets.properties.title" });
+  const meta = await s.spreadsheets.get({ spreadsheetId: sid(), fields: "sheets.properties(sheetId,title,gridProperties.columnCount)" });
   const have = new Set(meta.data.sheets?.map((x) => x.properties?.title));
   const names = Object.keys(SCHEMA) as SheetName[];
   const missing = names.filter((n) => !have.has(n));
   if (missing.length) {
     await s.spreadsheets.batchUpdate({
       spreadsheetId: sid(),
-      requestBody: { requests: missing.map((title) => ({ addSheet: { properties: { title } } })) },
+      requestBody: { requests: missing.map((title) => ({ addSheet: { properties: { title, gridProperties: { columnCount: Math.max(26, SCHEMA[title].length) } } } })) },
     });
     await s.spreadsheets.values.batchUpdate({
       spreadsheetId: sid(),
       requestBody: { valueInputOption: "RAW", data: missing.map((n) => ({ range: `${n}!A1`, values: [[...SCHEMA[n]]] })) },
+    });
+  }
+
+  // Lembar baru dari Google hanya punya 26 kolom (A-Z). Tab yang skemanya lebih lebar harus diperluas,
+  // jika tidak, penyimpanan kolom ke-27 dan seterusnya ditolak Google.
+  type Meta = { properties?: { sheetId?: number | null; title?: string | null; gridProperties?: { columnCount?: number | null } | null } | null };
+  const widen = ((meta.data.sheets ?? []) as Meta[])
+    .map((x) => ({ id: x.properties?.sheetId, title: x.properties?.title as SheetName, cols: x.properties?.gridProperties?.columnCount ?? 26 }))
+    .filter((x) => x.id !== undefined && x.id !== null && !!(SCHEMA as Record<string, readonly string[]>)[x.title] && SCHEMA[x.title].length > x.cols);
+  if (widen.length) {
+    await s.spreadsheets.batchUpdate({
+      spreadsheetId: sid(),
+      requestBody: { requests: widen.map((x) => ({ updateSheetProperties: { properties: { sheetId: x.id, gridProperties: { columnCount: SCHEMA[x.title].length } }, fields: "gridProperties.columnCount" } })) },
     });
   }
 
@@ -116,7 +131,7 @@ async function flush() {
   S.queue.clear(); S.timer = undefined;
   const vers = batch.map(([n]) => S.ver.get(n) ?? 0);
   try {
-    const r = await client().spreadsheets.values.batchGet({ spreadsheetId: sid(), ranges: batch.map(([n]) => `${n}!A:Z`) });
+    const r = await client().spreadsheets.values.batchGet({ spreadsheetId: sid(), ranges: batch.map(([n]) => `${n}!A:BZ`) });
     batch.forEach(([n, w], i) => {
       const rows = parse(r.data.valueRanges?.[i]?.values);
       // Jangan simpan jika tab ini ditulis selagi pembacaan berjalan (datanya sudah usang)

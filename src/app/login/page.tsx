@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -7,139 +6,84 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import AuthShell from "@/components/AuthShell";
 import PasswordInput from "@/components/PasswordInput";
+import { AuthStyles, Toast, Field, SubmitButton, EMAIL_RE, suggestEmail } from "@/components/AuthBits";
+
+const REMEMBER_KEY = "galaxy:email";
+
+const emailError = (v: string) =>
+  !v.trim() ? "Email wajib diisi." : !EMAIL_RE.test(v.trim()) ? "Format email belum benar. Contoh: nama@toko.com" : "";
+const passwordError = (v: string) => (v ? "" : "Password wajib diisi.");
 
 export default function Login() {
   const router = useRouter();
 
-  const [f, setF] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [err, setErr] = useState("");
+  const [f, setF] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [remember, setRemember] = useState(true);
+  const [caps, setCaps] = useState(false);
+  const [serverErr, setServerErr] = useState("");
+  const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
-  // Alert otomatis menghilang setelah 3,5 detik
+  // Isi email dari login sebelumnya
   useEffect(() => {
-    if (!err) return;
+    try {
+      const saved = localStorage.getItem(REMEMBER_KEY);
+      if (saved) setF((c) => ({ ...c, email: saved }));
+    } catch {}
+  }, []);
 
-    const timer = window.setTimeout(() => {
-      setErr("");
-    }, 3500);
+  const eErr = touched.email ? emailError(f.email) : "";
+  const pErr = touched.password ? passwordError(f.password) : "";
+  const suggestion = touched.email && !eErr ? suggestEmail(f.email) : "";
 
-    return () => window.clearTimeout(timer);
-  }, [err]);
-
-  // Menampilkan pesan error
-  function showError(message: string) {
-    setErr(message);
+  function triggerShake() {
+    setShake(true);
+    window.setTimeout(() => setShake(false), 480);
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy || done) return;
 
-    if (busy) return;
+    setServerErr("");
+    setTouched({ email: true, password: true });
 
-    setErr("");
-
-    // Validasi email dan password kosong
-    if (!f.email.trim() && !f.password) {
-      showError("Email dan password wajib diisi.");
-      return;
-    }
-
-    if (!f.email.trim()) {
-      showError("Email wajib diisi.");
-      return;
-    }
-
-    if (!f.password) {
-      showError("Password wajib diisi.");
-      return;
-    }
-
-    // Validasi format email
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailPattern.test(f.email.trim())) {
-      showError("Format email tidak valid. Periksa kembali email Anda.");
+    const ee = emailError(f.email);
+    const pe = passwordError(f.password);
+    if (ee || pe) {
+      triggerShake();
+      document.getElementById(ee ? "email" : "pw")?.focus();
       return;
     }
 
     setBusy(true);
-
     try {
       await api("/api/auth/login", {
         method: "POST",
-        body: {
-          email: f.email.trim(),
-          password: f.password,
-        },
+        body: { email: f.email.trim(), password: f.password },
       });
 
+      try {
+        if (remember) localStorage.setItem(REMEMBER_KEY, f.email.trim());
+        else localStorage.removeItem(REMEMBER_KEY);
+      } catch {}
+
+      setBusy(false);
+      setDone(true);
       router.replace("/dashboard");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Login gagal. Silakan coba kembali.";
-
-      showError(message);
+      setServerErr(error instanceof Error ? error.message : "Login gagal. Silakan coba kembali.");
+      triggerShake();
       setBusy(false);
     }
   }
 
   return (
     <>
-      {/* Floating Toast Alert */}
-      {err && (
-        <div
-          key={err}
-          role="alert"
-          aria-live="assertive"
-          className="fixed left-1/2 top-5 z-[9999] flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border border-red-500/20 bg-white p-4 text-sm text-red-600 shadow-2xl shadow-black/10 dark:bg-[#1c1c25] dark:text-red-400 animate-[galaxy-toast-in_300ms_ease-out]"
-        >
-          {/* Error Icon */}
-          <svg
-            className="mt-0.5 h-5 w-5 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
-
-          {/* Error Message */}
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">Login gagal</p>
-            <p className="mt-0.5 break-words">{err}</p>
-          </div>
-
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={() => setErr("")}
-            aria-label="Tutup notifikasi"
-            className="shrink-0 rounded-md p-1 opacity-60 transition hover:bg-red-500/10 hover:opacity-100"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="m18 6-12 12M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+      <AuthStyles />
+      <Toast title="Login gagal" message={serverErr} onClose={() => setServerErr("")} />
 
       <AuthShell
         title="Selamat datang kembali"
@@ -147,76 +91,99 @@ export default function Login() {
         footer={
           <>
             Belum punya akun?{" "}
-            <Link href="/register" className="font-semibold text-link">
-              Daftarkan toko
-            </Link>
+            <Link href="/register" className="font-semibold text-link">Daftarkan toko</Link>
           </>
         }
       >
-        <form onSubmit={submit} noValidate className="space-y-5">
-          {/* Email */}
-          <div>
-            <label className="label" htmlFor="email">
-              Email
-            </label>
-
+        <form onSubmit={submit} noValidate className={`space-y-1 ${shake ? "auth-shake" : ""}`}>
+          <Field
+            id="email"
+            label="Email"
+            error={eErr}
+            ok={touched.email && !eErr && !!f.email}
+            delay={0}
+            hint={
+              suggestion ? (
+                <button
+                  type="button"
+                  onClick={() => setF((c) => ({ ...c, email: suggestion }))}
+                  className="text-left font-medium text-link underline underline-offset-2"
+                >
+                  Maksud Anda {suggestion}?
+                </button>
+              ) : undefined
+            }
+          >
             <input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
               placeholder="nama@toko.com"
-              className="input"
+              className="input pr-10"
               value={f.email}
-              disabled={busy}
+              disabled={busy || done}
+              aria-invalid={!!eErr}
+              aria-describedby={eErr ? "email-err" : undefined}
+              data-ok={touched.email && !eErr && !!f.email}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               onChange={(e) => {
-                setF((current) => ({
-                  ...current,
-                  email: e.target.value,
-                }));
-
-                setErr("");
+                setF((c) => ({ ...c, email: e.target.value }));
+                setServerErr("");
               }}
             />
-          </div>
+          </Field>
 
-          {/* Password */}
-          <div>
-            <label className="label" htmlFor="pw">
-              Password
-            </label>
-
-            <PasswordInput
-              id="pw"
-              autoComplete="current-password"
-              value={f.password}
-              onChange={(value) => {
-                setF((current) => ({
-                  ...current,
-                  password: value,
-                }));
-
-                setErr("");
-              }}
-              disabled={busy}
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={busy}
-            className="btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+          <Field
+            id="pw"
+            label="Password"
+            error={pErr}
+            delay={80}
+            hint={caps ? <span className="font-medium text-amber-600 dark:text-amber-400">Caps Lock sedang menyala</span> : undefined}
           >
-            {busy ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                Memproses...
-              </>
-            ) : (
-              "Masuk ke Galaxy Kasir"
-            )}
-          </button>
+            <div
+              className="auth-pw"
+              data-invalid={!!pErr}
+              onKeyUp={(e) => setCaps(e.getModifierState("CapsLock"))}
+              onBlur={() => {
+                setCaps(false);
+                setTouched((t) => ({ ...t, password: true }));
+              }}
+            >
+              <PasswordInput
+                id="pw"
+                autoComplete="current-password"
+                value={f.password}
+                disabled={busy || done}
+                onChange={(value) => {
+                  setF((c) => ({ ...c, password: value }));
+                  setServerErr("");
+                }}
+              />
+            </div>
+          </Field>
+
+          <div className="auth-rise flex items-center justify-between pb-3 pt-1" style={{ animationDelay: "160ms" }}>
+            <label className="flex cursor-pointer select-none items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 cursor-pointer rounded accent-[rgb(var(--accent))]"
+              />
+              Ingat email saya
+            </label>
+          </div>
+
+          <div className="auth-rise" style={{ animationDelay: "240ms" }}>
+            <SubmitButton
+              busy={busy}
+              done={done}
+              idle="Masuk ke Galaxy Kasir"
+              working="Memeriksa..."
+              success="Berhasil, membuka dashboard"
+            />
+          </div>
         </form>
       </AuthShell>
     </>

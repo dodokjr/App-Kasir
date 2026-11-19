@@ -61,6 +61,7 @@ export const GET = handle(async (req) => {
       avgTicket: txs.length ? Math.round(sales / txs.length) : 0,
       expenses: spent, net: sales - spent,
       tax: txs.reduce((a, t) => a + num(t.taxAmount), 0),
+      discount: txs.reduce((a, t) => a + num(t.discountAmount), 0),
       // Penjualan tunai (transaksi lama tanpa metode dianggap tunai) dan jumlah yang sudah dicatat disetor ke rekening
       cashSales: txs.filter((t) => isCash(t.paymentKey)).reduce((a, t) => a + num(t.total), 0),
       deposited: deposits.reduce((a, x) => a + num(x.amount), 0),

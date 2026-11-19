@@ -1,8 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { api } from "@/lib/client";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { api, isNetworkError } from "@/lib/client";
+import { clearMe, loadMe, saveMe, syncQueue } from "@/lib/offline";
+import { useQueue } from "@/lib/useQueue";
 import type { Me } from "@/lib/types";
 import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/Logo";
@@ -23,6 +25,8 @@ const ICONS: Record<string, ReactNode> = {
   keuangan: <><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></>,
   monitor: <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />,
   permintaan: <><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></>,
+  peta: <><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></>,
+  target: <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>,
   pengaturan: <><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3" /><path d="M14 2v4M8 10v4M16 18v4" /></>,
   pesan: <><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></>,
   keluar: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></>,
@@ -44,8 +48,40 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
   const router = useRouter();
   const path = usePathname();
   const online = useOnline();
+  const [loadErr, setLoadErr] = useState("");
+  const [fromCache, setFromCache] = useState(false);
 
-  useEffect(() => { api<Me>("/api/auth/me").then(setMe).catch(() => router.replace("/login")); }, [router]);
+  // Hanya sesi yang habis (401) yang mengarah ke login. Internet putus atau server sibuk tidak boleh mengeluarkan kasir
+  const loadMe_ = useCallback(() => {
+    setLoadErr("");
+    api<Me>("/api/auth/me").then((m) => { saveMe(m); setFromCache(false); setMe(m); }).catch((e) => {
+      if (isNetworkError(e)) {
+        const c = loadMe<Me>();
+        if (c) { setFromCache(true); setMe(c); return; }
+        setLoadErr("Tidak ada koneksi internet dan belum ada data tersimpan di perangkat ini. Sambungkan internet lalu coba lagi.");
+      } else if ((e as { status?: number }).status === 401) { clearMe(); router.replace("/login"); }
+      else setLoadErr((e as Error).message || "Gagal memuat. Coba lagi.");
+    });
+  }, [router]);
+  useEffect(() => { loadMe_(); }, [loadMe_]);
+
+  // Kirim transaksi offline yang tertunda: saat internet kembali, saat halaman dibuka, dan berkala
+  const uid = me?.session.uid;
+  const queue = useQueue(uid);
+  useEffect(() => {
+    if (!uid) return;
+    const post = (body: Record<string, unknown>) => api("/api/transactions", { method: "POST", body });
+    const run = async () => {
+      if (!navigator.onLine) return;
+      const r = await syncQueue(post, uid);
+      if (r.sent > 0) window.dispatchEvent(new Event("kt-synced"));
+    };
+    run();
+    const t = setInterval(run, 20_000);
+    window.addEventListener("online", run);
+    window.addEventListener("kt-sync", run);
+    return () => { clearInterval(t); window.removeEventListener("online", run); window.removeEventListener("kt-sync", run); };
+  }, [uid]);
 
   // Menu geser (HP/tablet) menutup saat pindah halaman atau menekan Escape
   useEffect(() => { setOpen(false); }, [path]);
@@ -73,6 +109,16 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", beat); window.removeEventListener("online", beat); };
   }, [uidKey, platform, path]);
 
+  if (!me && loadErr) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="card max-w-md space-y-4 p-6 text-center" role="alert">
+          <p className="font-semibold">{loadErr}</p>
+          <button className="btn-primary" onClick={loadMe_}>Coba lagi</button>
+        </div>
+      </div>
+    );
+  }
   if (!me) {
     return (
       <div className="flex min-h-screen items-center justify-center" role="status">
@@ -87,12 +133,18 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
     { href: "/dashboard", t: "Dashboard", i: "dashboard" },
     ...(role === "kasir" || head ? [{ href: "/kasir", t: "Kasir", i: "kasir" }] : []),
     ...(role === "gudang" || head ? [{ href: "/gudang", t: "Gudang", i: "gudang" }, { href: "/permintaan", t: "Permintaan barang", i: "permintaan" }] : []),
-    ...(head ? [{ href: "/keuangan", t: "Keuangan", i: "keuangan" }, { href: "/monitor", t: "Pantau kasir", i: "monitor" }] : []),
+    ...(head ? [{ href: "/keuangan", t: "Keuangan", i: "keuangan" }, { href: "/target", t: "Target", i: "target" }, { href: "/peta", t: "Peta toko", i: "peta" }, { href: "/monitor", t: "Pantau kasir", i: "monitor" }] : []),
     ...(role === "developer" || role === "admin" ? [{ href: "/pesan", t: "Pesan", i: "pesan" }] : []),
     ...(role === "kepala_toko" ? [{ href: "/pengaturan", t: "Pengaturan", i: "pengaturan" }] : []),
   ];
   const here = nav.find((n) => path === n.href || path.startsWith(n.href + "/"));
-  const logout = async () => { await api("/api/auth/logout", { method: "POST" }).catch(() => {}); router.replace("/login"); };
+  const logout = async () => {
+    // Transaksi offline yang belum terkirim tetap aman di perangkat dan dikirim saat akun ini masuk lagi
+    if (queue.total > 0 && !confirm(`Ada ${queue.total} transaksi offline yang belum terkirim. Jika keluar sekarang, transaksi itu baru dikirim setelah Anda masuk lagi dengan akun ini. Tetap keluar?`)) return;
+    await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+    clearMe();
+    router.replace("/login");
+  };
 
   const panel = (
     <div className="flex h-full flex-col">
@@ -149,9 +201,13 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
         </div>
       )}
 
-      {!online && (
-        <div role="alert" className="sticky top-[57px] z-20 border-b border-danger bg-danger/10 px-4 py-2 text-center text-sm font-semibold text-danger xl:top-0">
-          Anda sedang offline. Perubahan tidak tersimpan dan kepala cabang melihat kasir ini sebagai offline sampai koneksi kembali.
+      {(!online || queue.total > 0 || queue.otherAccounts > 0 || fromCache) && (
+        <div role="status" className={`sticky top-[57px] z-20 border-b px-4 py-2 text-center text-sm font-semibold xl:top-0 ${!online || queue.failed > 0 ? "border-danger bg-danger/10 text-danger" : "border-sun bg-sun/25"}`}>
+          {!online && <>Anda sedang offline. Halaman Kasir tetap bisa dipakai: transaksi disimpan di perangkat ini dan dikirim otomatis saat internet kembali. Halaman lain butuh internet. </>}
+          {queue.pending > 0 && <>{queue.pending} transaksi {online ? "sedang dikirim" : "menunggu dikirim"}. </>}
+          {queue.failed > 0 && <>{queue.failed} transaksi gagal dikirim. <Link href="/kasir" className="underline">Periksa di halaman Kasir</Link>. </>}
+          {queue.otherAccounts > 0 && <>Ada {queue.otherAccounts} transaksi offline milik akun lain di perangkat ini. </>}
+          {online && fromCache && queue.total === 0 && <>Menampilkan data tersimpan. </>}
         </div>
       )}
       <main className="mx-auto max-w-6xl p-4 sm:p-6 xl:p-8">
