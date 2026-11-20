@@ -19,6 +19,8 @@ export const SCHEMA = {
   targets: ["id", "storeId", "branchId", "month", "amount", "updatedById", "updatedByName", "updatedAt"],
   payment_methods: ["id", "storeId", "key", "label", "group", "active", "createdAt"],
   presence: ["id", "storeId", "branchId", "name", "role", "lastSeen", "page"],
+  // TABEL BARU: preset diskon (persen / nominal) per toko
+  discounts: ["id", "storeId", "name", "type", "value", "minSubtotal", "validFrom", "validTo", "active", "createdAt"],
 } as const;
 
 export type SheetName = keyof typeof SCHEMA;
