@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import Logo from "@/components/Logo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const ROWS = [
   ["Kopi susu gula aren", "2 × 22.000", "44.000"],
@@ -10,7 +11,7 @@ const ROWS = [
 
 function Receipt() {
   return (
-    <div className="w-full max-w-[300px] rotate-[-2deg] drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]">
+    <div className="anim-float w-full max-w-[300px] rotate-[-2deg] drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]">
       <div className="rounded-t-xl bg-white px-5 pb-4 pt-5 font-mono text-[12px] leading-5 text-[#14201C]">
         <p className="text-center text-sm font-bold">Galaxy Store</p>
         <p className="text-center text-[11px] text-[#5B6B66]">
@@ -79,15 +80,15 @@ export default function AuthShell({
   return (
     <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
       {/* Panel kiri */}
-      <aside className="relative hidden overflow-hidden bg-[#111827] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-accent-dark via-[#111827] to-[#0b1220] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[rgb(var(--accent))]/15 blur-3xl"
+          className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[rgb(var(--accent-2)/0.30)] blur-3xl anim-blob"
         />
 
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-[rgb(var(--accent))]/10 blur-3xl"
+          className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-[rgb(var(--sun)/0.18)] blur-3xl anim-blob [animation-delay:-6s]"
         />
 
         <div className="relative">
@@ -115,9 +116,10 @@ export default function AuthShell({
       </aside>
 
       {/* Panel kanan */}
-      <main className="flex flex-col px-5 py-6 sm:px-10">
-        <div className="lg:hidden">
-          <Logo />
+      <main className="page-in flex flex-col px-5 py-6 sm:px-10">
+        <div className="flex items-center justify-between">
+          <div className="lg:hidden"><Logo /></div>
+          <div className="ml-auto"><ThemeToggle /></div>
         </div>
 
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">

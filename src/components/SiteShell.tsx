@@ -22,7 +22,7 @@ export default async function SiteShell({ children }: { children: ReactNode }) {
           <Link href="/" aria-label={`${SITE.name}, ke beranda`}><Logo /></Link>
 
           <nav aria-label="Menu utama" className="ml-6 hidden gap-1 text-[15px] font-medium md:flex">
-            {NAV.map(([href, t]) => <Link key={href} href={href} className="rounded-lg px-3 py-2 hover:bg-paper">{t}</Link>)}
+            {NAV.map(([href, t]) => <Link key={href} href={href} className="rounded-lg px-3 py-2 hover:bg-accent/10 hover:text-accent dark:hover:text-link transition">{t}</Link>)}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
@@ -58,7 +58,7 @@ export default async function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div id="isi" className="flex-1">{children}</div>
+      <div id="isi" className="page-in flex-1">{children}</div>
 
       <footer className="border-t border-line bg-surface">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
@@ -77,7 +77,7 @@ export default async function SiteShell({ children }: { children: ReactNode }) {
     href="https://mfikria.vercel.app" 
     target="_blank" 
     rel="noopener noreferrer" 
-    className="text-foreground hover:underline"
+    className="text-link hover:underline"
   >
     {SITE.desain}
   </a>

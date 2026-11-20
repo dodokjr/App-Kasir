@@ -196,7 +196,7 @@ function CloseModal({ shift, onCancel, onDone }: { shift: ShiftOut; onCancel: ()
             <input id="counted" autoFocus inputMode="numeric" className="input flex-1 font-mono" value={counted} onChange={(e) => setCounted(e.target.value.replace(/\D/g, ""))} />
             <button type="button" className="btn-ghost ks-press" onClick={() => setCounted(String(shift.expectedCash))}>Pas</button>
           </div>
-          <p key={diff === null ? "x" : diff === 0 ? "pas" : diff > 0 ? "lebih" : "kurang"} className={`ks-pop mt-2 rounded-lg px-3 py-2 text-sm font-medium ${diff === null ? "text-muted" : diff === 0 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : diff > 0 ? "bg-sun/25" : "bg-danger/10 text-danger"}`} aria-live="polite">
+          <p key={diff === null ? "x" : diff === 0 ? "pas" : diff > 0 ? "lebih" : "kurang"} className={`ks-pop mt-2 rounded-lg px-3 py-2 text-sm font-medium ${diff === null ? "text-muted" : diff === 0 ? "bg-accent/10 text-accent dark:text-link" : diff > 0 ? "bg-sun/25" : "bg-danger/10 text-danger"}`} aria-live="polite">
             {diff === null ? "Isi jumlah uang untuk melihat selisih."
               : diff === 0 ? "✓ Kas pas."
               : diff > 0 ? `Lebih ${rp(diff)}`
@@ -457,10 +457,10 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
           <div className="font-mono">{rp(Math.round(salesShown))} <span className="text-muted">({shift.txCount} transaksi)</span>{queue.pendingSales > 0 && <span className="text-muted"> + {rp(queue.pendingSales)} belum terkirim</span>}</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${online ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-danger/10 text-danger"}`}>
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${online ? "bg-accent/15 text-accent dark:text-link" : "bg-danger/10 text-danger"}`}>
             <span className="relative flex h-2 w-2">
-              {online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60 motion-reduce:animate-none" />}
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-danger"}`} />
+              {online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" />}
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${online ? "bg-accent" : "bg-danger"}`} />
             </span>
             {online ? "Online" : "Offline"}
           </span>
@@ -634,7 +634,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
 
           <div className="space-y-1 text-sm">
             {(discount > 0 || (tax > 0 && taxCfg.mode === "exclusive")) && <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="font-mono">{rp(subtotal)}</span></div>}
-            {discount > 0 && <div className="ks-pop flex justify-between text-emerald-700 dark:text-emerald-300"><span>Diskon{discInput ? ` (${discInput.name})` : ""}</span><span className="font-mono">-{rp(discount)}</span></div>}
+            {discount > 0 && <div className="ks-pop flex justify-between text-accent dark:text-link"><span>Diskon{discInput ? ` (${discInput.name})` : ""}</span><span className="font-mono">-{rp(discount)}</span></div>}
             {tax > 0 && taxCfg.mode === "exclusive" && <div className="flex justify-between"><span className="text-muted">PPN {fmtRate(taxCfg.rate)}%</span><span className="font-mono">{rp(tax)}</span></div>}
           </div>
           <div className="flex items-baseline justify-between rounded-xl bg-paper px-4 py-3">
@@ -661,7 +661,7 @@ function Pos({ me, shift, reload, onClose }: { me: Me; shift: ShiftOut; reload: 
                 <button className="btn-ghost ks-press" onClick={() => setPaid(String(total))} disabled={total <= 0}>Uang pas</button>
                 {cashSuggest.map((n) => <button key={n} className="btn-ghost ks-press" onClick={() => setPaid(String(n))}>{rp(n)}</button>)}
               </div>
-              <div className={`mt-3 flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${!paid ? "bg-paper" : change >= 0 ? "bg-emerald-500/10" : "bg-danger/10"}`} aria-live="polite">
+              <div className={`mt-3 flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${!paid ? "bg-paper" : change >= 0 ? "bg-accent/10" : "bg-danger/10"}`} aria-live="polite">
                 <span className="text-sm text-muted">{paid && change < 0 ? "Kurang" : "Kembalian"}</span>
                 <span key={paid ? change : "x"} className={`ks-pop font-mono text-lg font-bold ${paid && change < 0 ? "text-danger" : ""}`}>{!paid ? "-" : change >= 0 ? rp(change) : rp(-change)}</span>
               </div>

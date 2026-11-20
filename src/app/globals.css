@@ -127,3 +127,89 @@
     animation: none !important;
   }
 }
+
+/* ===== Palet warna pilihan pengguna: <html data-palette="..."> diatur ThemeToggle ===== */
+@layer base {
+  :root { --accent-2: 13 148 136; }
+  .dark { --accent-2: 45 212 191; }
+
+  [data-palette="laut"] { --ink: 15 23 42; --paper: 244 247 252; --line: 212 221 236; --muted: 78 92 112; --accent: 29 78 216; --accent-dark: 30 58 138; --accent-2: 14 116 144; --link: 29 78 216; --sun: 251 191 36; --sun-ink: 66 32 6; }
+  .dark[data-palette="laut"] { --ink: 230 236 247; --paper: 10 15 28; --surface: 17 24 42; --line: 36 48 74; --muted: 148 163 184; --accent: 37 99 235; --accent-dark: 29 78 216; --accent-2: 34 211 238; --link: 147 197 253; }
+
+  [data-palette="senja"] { --ink: 41 22 14; --paper: 253 247 241; --line: 234 218 204; --muted: 110 90 80; --accent: 194 65 12; --accent-dark: 154 52 18; --accent-2: 190 18 60; --link: 194 65 12; --sun: 250 204 21; --sun-ink: 66 32 6; }
+  .dark[data-palette="senja"] { --ink: 248 236 228; --paper: 24 15 11; --surface: 36 24 18; --line: 64 46 36; --muted: 190 165 150; --accent: 194 65 12; --accent-dark: 154 52 18; --accent-2: 251 113 133; --link: 253 186 116; }
+
+  [data-palette="anggur"] { --ink: 30 20 52; --paper: 248 245 255; --line: 223 215 240; --muted: 94 84 120; --accent: 109 40 217; --accent-dark: 91 33 182; --accent-2: 162 28 175; --link: 109 40 217; --sun: 251 191 36; --sun-ink: 66 32 6; }
+  .dark[data-palette="anggur"] { --ink: 240 234 252; --paper: 16 11 28; --surface: 26 18 44; --line: 52 40 82; --muted: 172 160 200; --accent: 124 58 237; --accent-dark: 109 40 217; --accent-2: 232 121 249; --link: 196 181 253; }
+
+  [data-palette="mawar"] { --ink: 50 15 25; --paper: 255 245 247; --line: 240 214 220; --muted: 120 85 95; --accent: 190 18 60; --accent-dark: 159 18 57; --accent-2: 157 23 77; --link: 190 18 60; --sun: 251 191 36; --sun-ink: 66 32 6; }
+  .dark[data-palette="mawar"] { --ink: 252 232 238; --paper: 26 11 16; --surface: 40 18 26; --line: 72 36 48; --muted: 196 160 170; --accent: 190 18 60; --accent-dark: 159 18 57; --accent-2: 244 114 182; --link: 253 164 175; }
+
+  [data-palette="grafit"] { --ink: 15 23 42; --paper: 246 247 249; --line: 214 219 226; --muted: 80 92 108; --accent: 51 65 85; --accent-dark: 30 41 59; --accent-2: 71 85 105; --link: 51 65 85; --sun: 251 191 36; --sun-ink: 66 32 6; }
+  .dark[data-palette="grafit"] { --ink: 236 239 244; --paper: 12 14 18; --surface: 20 23 29; --line: 40 45 55; --muted: 160 168 180; --accent: 100 116 139; --accent-dark: 71 85 105; --accent-2: 148 163 184; --link: 203 213 225; }
+
+  /* Warna berubah halus saat tema diganti */
+  body, .card, .input, .field, .btn, .btn-ghost, .btn-primary { transition: background-color .35s ease, border-color .35s ease, color .35s ease; }
+}
+
+/* Lingkaran tema: View Transitions dikendalikan dari ThemeToggle */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+/* Panel tema */
+@keyframes theme-pop { from { opacity: 0; transform: translateY(-8px) scale(.96); } to { opacity: 1; transform: none; } }
+.theme-pop { animation: theme-pop .22s cubic-bezier(.2,.8,.2,1) both; transform-origin: top right; }
+@keyframes swatch-in { from { opacity: 0; transform: translateY(8px) scale(.9); } to { opacity: 1; transform: none; } }
+.swatch-in { animation: swatch-in .35s cubic-bezier(.2,.8,.2,1) both; }
+
+/* Hiasan beranda yang ikut warna pilihan */
+@keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+.bg-aurora { background-image: linear-gradient(120deg, rgb(var(--accent) / .14), rgb(var(--accent-2) / .12), rgb(var(--sun) / .14), rgb(var(--accent) / .14)); background-size: 300% 300%; animation: aurora 16s ease-in-out infinite; }
+.bg-dots { background-image: radial-gradient(rgb(var(--ink) / .12) 1px, transparent 1px); background-size: 22px 22px; -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); }
+.glow-border { position: relative; }
+.glow-border::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--a, 0deg), rgb(var(--accent)), rgb(var(--accent-2)), rgb(var(--sun)), rgb(var(--accent))); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.glow-border:hover::before { opacity: 1; animation: spin-a 4s linear infinite; }
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes spin-a { to { --a: 360deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-pop, .swatch-in, .bg-aurora, .glow-border:hover::before { animation: none !important; }
+  body, .card, .input, .field, .btn { transition: none; }
+}
+
+/* ===== Animasi & sentuhan umum untuk seluruh halaman ===== */
+html { accent-color: rgb(var(--accent)); }
+::selection { background: rgb(var(--accent) / .25); }
+
+@keyframes page-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.page-in { animation: page-in .55s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-50px) scale(1.12); } 66% { transform: translate(-30px,30px) scale(.94); } }
+.anim-blob { animation: blob 14s ease-in-out infinite; }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+.anim-float { animation: float 5s ease-in-out infinite; }
+@keyframes pop { 0% { transform: scale(.92); opacity: .3; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+.anim-pop { animation: pop .4s cubic-bezier(.2,.8,.2,1) both; }
+
+/* Kartu, tombol, dan baris tabel terasa hidup */
+.card { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .35s ease; }
+.card:hover { border-color: rgb(var(--accent) / .45); box-shadow: 0 14px 30px -18px rgb(var(--accent) / .45); }
+.btn { transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, border-color .2s ease; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+.btn:not(:disabled):active { transform: scale(.97); }
+.btn-primary { background-image: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-2))); background-size: 140% 140%; background-position: 0% 50%; transition: background-position .4s ease, transform .15s ease, box-shadow .2s ease; }
+.btn-primary:hover { background-position: 100% 50%; box-shadow: 0 10px 22px -12px rgb(var(--accent) / .7); }
+tbody tr { transition: background-color .2s ease; }
+tbody tr:hover { background-color: rgb(var(--accent) / .06); }
+.input:focus, .field:focus { box-shadow: 0 0 0 4px rgb(var(--accent) / .15); }
+
+/* Halaman panduan: isi muncul berurutan */
+.doc > * { animation: page-in .5s cubic-bezier(.2,.7,.2,1) both; }
+.doc > *:nth-child(2) { animation-delay: .05s; } .doc > *:nth-child(3) { animation-delay: .1s; }
+.doc > *:nth-child(4) { animation-delay: .15s; } .doc > *:nth-child(n+5) { animation-delay: .2s; }
+.doc .quick a:hover { transform: translateY(-3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in, .anim-blob, .anim-float, .anim-pop, .doc > * { animation: none !important; }
+  .btn:not(:disabled):hover, .btn:not(:disabled):active, .doc .quick a:hover { transform: none; }
+}

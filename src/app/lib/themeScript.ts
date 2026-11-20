@@ -1,0 +1,2 @@
+// Dijalankan sebelum halaman tampil, supaya tidak ada kedipan terang/gelap atau warna salah.
+export const themeScript = `(function(){try{var d=document.documentElement,t=localStorage.getItem("theme"),p=localStorage.getItem("palette");var dark=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",dark);d.style.colorScheme=dark?"dark":"light";if(p&&/^[a-z]+$/.test(p))d.setAttribute("data-palette",p);}catch(e){}})();`;

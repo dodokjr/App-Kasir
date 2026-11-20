@@ -90,10 +90,10 @@ export function FeedbackProvider({
   };
 
   const toneClasses: Record<Tone, string> = {
-    success: "border-green-500 bg-green-50 text-green-800",
-    error: "border-red-500 bg-red-50 text-red-800",
-    warning: "border-yellow-500 bg-yellow-50 text-yellow-800",
-    info: "border-blue-500 bg-blue-50 text-blue-800",
+    success: "border-accent bg-surface text-ink shadow-lg ring-1 ring-accent/20",
+    error: "border-red-500 bg-surface text-danger shadow-lg ring-1 ring-red-500/20",
+    warning: "border-yellow-500 bg-surface text-ink shadow-lg ring-1 ring-yellow-500/30",
+    info: "border-[rgb(var(--accent-2))] bg-surface text-ink shadow-lg ring-1 ring-[rgb(var(--accent-2)/0.2)]",
   };
 
   return (
@@ -195,10 +195,10 @@ export function Alert({
   children,
 }: AlertProps) {
   const classes: Record<Tone, string> = {
-    success: "border-green-500 bg-green-50 text-green-800",
-    error: "border-red-500 bg-red-50 text-red-800",
-    warning: "border-yellow-500 bg-yellow-50 text-yellow-800",
-    info: "border-blue-500 bg-blue-50 text-blue-800",
+    success: "border-accent bg-surface text-ink shadow-lg ring-1 ring-accent/20",
+    error: "border-red-500 bg-surface text-danger shadow-lg ring-1 ring-red-500/20",
+    warning: "border-yellow-500 bg-surface text-ink shadow-lg ring-1 ring-yellow-500/30",
+    info: "border-[rgb(var(--accent-2))] bg-surface text-ink shadow-lg ring-1 ring-[rgb(var(--accent-2)/0.2)]",
   };
 
   return (

@@ -537,8 +537,8 @@ function Team({ me }: { me: Me }) {
             title={live ? "Data diperbarui otomatis tiap 30 detik. Klik untuk menghentikan." : "Klik untuk memperbarui data otomatis tiap 30 detik."}
           >
             <span className="relative flex h-2.5 w-2.5">
-              {live && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60 motion-reduce:animate-none" />}
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${live ? "bg-emerald-500" : "bg-muted"}`} />
+              {live && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" />}
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${live ? "bg-accent" : "bg-muted"}`} />
             </span>
             Otomatis
           </button>
@@ -815,7 +815,7 @@ function KasirHome({ me }: { me: Me }) {
           <>
             <div>
               <div className="flex items-center gap-2 text-sm font-medium text-muted">
-                <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60 motion-reduce:animate-none" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" /></span>
+                <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" /></span>
                 Kasir Anda sedang dibuka
               </div>
               <div className="mt-1 text-3xl font-extrabold tracking-tight">{rp(Math.round(total))}</div>

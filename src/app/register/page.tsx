@@ -131,7 +131,7 @@ export default function Register() {
               {ORDER.map((k, i) => (
                 <span
                   key={k}
-                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${errs[k] ? "bg-current opacity-10" : "bg-emerald-500"}`}
+                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${errs[k] ? "bg-current opacity-10" : "bg-accent"}`}
                   style={{ transitionDelay: `${i * 40}ms` }}
                 />
               ))}

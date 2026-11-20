@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
-import { useTheme, type Theme } from "@/components/ThemeToggle";
+import { ThemePanel } from "@/components/ThemeToggle";
 import Receipt, { KitchenTicket } from "@/components/Receipt";
 import { DEFAULT_SETTINGS, sampleFor, withTax, type ReceiptSettings } from "@/lib/receiptSettings";
 import { BUSINESS_TYPES, DISCOUNT_TYPES, discountLabel, type DiscountPreset, type DiscountType, DEFAULT_TAX, GROUP_LABEL, PAYMENT_PRESETS, TAX_PRESETS, methodAllowed, calcTax, fmtRate, normRate, type BusinessType, type PayGroup, type PayMethod, type TaxConfig } from "@/lib/business";
 import { api, rp } from "@/lib/client";
 import type { Me } from "@/lib/types";
 
-const THEMES: [Theme, string][] = [["light", "Terang"], ["dark", "Gelap"], ["system", "Ikuti perangkat"]];
 
 function Check({ id, label, v, on, disabled }: { id: string; label: string; v: boolean; on: (b: boolean) => void; disabled: boolean }) {
   return <label htmlFor={id} className="flex items-center gap-2 text-sm"><input id={id} type="checkbox" disabled={disabled} checked={v} onChange={(e) => on(e.target.checked)} />{label}</label>;
@@ -210,7 +209,6 @@ function Settings({ me }: { me: Me }) {
   useEffect(() => { api<{ tax: TaxConfig }>("/api/store").then((r) => setTax(r.tax)).catch(() => {}); }, []);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  const { theme, set } = useTheme();
   useEffect(() => { api<ReceiptSettings>("/api/receipt-settings").then(setF).catch((x) => setErr((x as Error).message)); }, []);
   const sample = withTax(sampleFor(biz), tax);
   const up = <K extends keyof ReceiptSettings>(k: K, v: ReceiptSettings[K]) => { setF((p) => ({ ...p, [k]: v })); setMsg(""); };
@@ -225,10 +223,7 @@ function Settings({ me }: { me: Me }) {
     <div className="space-y-6">
       <section className="card space-y-3">
         <h2 className="font-semibold">Tampilan</h2>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tema">
-          {THEMES.map(([k, l]) => <button key={k} role="radio" aria-checked={theme === k} className={theme === k ? "btn-primary" : "btn-ghost"} onClick={() => set(k)}>{l}</button>)}
-        </div>
-        <p className="text-sm text-muted">Pilihan tema disimpan di browser ini.</p>
+        <div className="max-w-sm"><ThemePanel /></div>
       </section>
 
       {owner && <BusinessSection type={biz} onChange={setBiz} />}

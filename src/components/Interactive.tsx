@@ -99,7 +99,7 @@ export function LiveMonitor() {
             <div className={`flex items-center gap-2 font-medium transition-colors ${r.online ? "" : "text-danger"}`}>
               <span className="relative flex h-2.5 w-2.5">
                 {!r.online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-70" />}
-                <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${r.online ? "bg-emerald-500" : "bg-danger"}`} />
+                <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${r.online ? "bg-accent" : "bg-danger"}`} />
               </span>
               {r.online ? "Online" : "Offline, kasir masih dibuka"}
             </div>
@@ -208,7 +208,7 @@ export function TutupKasirDemo() {
   const expected = 1250000;
   const [counted, setCounted] = useState(1250000);
   const diff = counted - expected;
-  const tone = diff === 0 ? "text-emerald-600 dark:text-emerald-300" : diff < 0 ? "text-danger" : "text-amber-600 dark:text-amber-300";
+  const tone = diff === 0 ? "text-accent dark:text-link" : diff < 0 ? "text-danger" : "text-amber-600 dark:text-amber-300";
   const label = diff === 0 ? "Pas" : diff < 0 ? "Kurang" : "Lebih";
   const btn = "rounded-lg bg-amber-500/15 px-3 py-1.5 text-sm font-semibold transition-all hover:bg-amber-500/30 active:scale-95";
   return (
@@ -233,7 +233,7 @@ const ROLES = [
     d: "Mendaftarkan toko, menambah cabang dan tim, mengatur jenis usaha, PPN, dan metode pembayaran, serta melihat stok, transaksi, dan keuangan semua cabang.",
     can: ["Daftarkan toko", "Tambah cabang dan tim", "Atur PPN dan pembayaran", "Lihat keuangan semua cabang"],
     cant: [] as string[],
-    tab: "bg-emerald-500 text-white", soft: "border-emerald-500/40 bg-emerald-500/10",
+    tab: "bg-accent text-white", soft: "border-accent/40 bg-accent/10",
   },
   {
     t: "Kepala cabang",
@@ -284,7 +284,7 @@ export function RoleExplorer() {
         <p className="mt-2 leading-7 text-muted">{r.d}</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {r.can.map((c, n) => (
-            <span key={c} style={{ animationDelay: `${n * 70}ms` }} className="anim-pop rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">✓ {c}</span>
+            <span key={c} style={{ animationDelay: `${n * 70}ms` }} className="anim-pop rounded-full bg-accent/15 px-3 py-1 text-sm font-semibold text-accent dark:text-link">✓ {c}</span>
           ))}
           {r.cant.map((c, n) => (
             <span key={c} style={{ animationDelay: `${(r.can.length + n) * 70}ms` }} className="anim-pop rounded-full bg-rose-500/15 px-3 py-1 text-sm font-semibold text-rose-700 dark:text-rose-300">✕ {c}</span>
@@ -300,7 +300,7 @@ export function RoleExplorer() {
 const STEPS = [
   ["Daftarkan toko", "Isi nama toko, pilih jenis usaha, lalu buat akun kepala toko. Cabang pertama langsung jadi.", "bg-rose-500"],
   ["Tambah cabang dan tim", "Buat cabang lain bila perlu, lalu tambahkan kepala cabang, kasir, dan gudang. Atur PPN dan metode pembayaran di Pengaturan.", "bg-sky-500"],
-  ["Isi produk dan mulai jualan", "Gudang mengisi produk. Kasir membuka kasir, melayani pembeli, mencetak struk, dan menutup kasir di akhir shift.", "bg-emerald-500"],
+  ["Isi produk dan mulai jualan", "Gudang mengisi produk. Kasir membuka kasir, melayani pembeli, mencetak struk, dan menutup kasir di akhir shift.", "bg-accent"],
 ];
 const STEP_MS = 4500;
 

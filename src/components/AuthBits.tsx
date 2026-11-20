@@ -111,7 +111,7 @@ export function Field({
       <div className="relative">
         {children}
         {ok && !error && (
-          <svg className="auth-pop pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="auth-pop pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
           </svg>
         )}
@@ -145,7 +145,7 @@ export function StrengthMeter({ password }: { password: string }) {
   const score = passwordScore(password);
   const short = password.length > 0 && password.length < 8;
   const labels = ["", "Belum 8 karakter", "Cukup", "Bagus", "Kuat"];
-  const colors = ["", "bg-red-500", "bg-amber-500", "bg-lime-500", "bg-emerald-500"];
+  const colors = ["", "bg-red-500", "bg-amber-500", "bg-lime-500", "bg-accent"];
   return (
     <div className="mt-2" aria-live="polite">
       <div className="flex gap-1.5">

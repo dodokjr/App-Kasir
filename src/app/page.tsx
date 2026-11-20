@@ -27,7 +27,7 @@ const CSS = `
 .anim-marquee{animation:marquee 30s linear infinite}
 @keyframes pop{0%{transform:scale(.92);opacity:.3}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
 .anim-pop{animation:pop .4s cubic-bezier(.2,.8,.2,1) both}
-@keyframes flash{0%{background-color:rgb(16 185 129 / .35)}100%{background-color:transparent}}
+@keyframes flash{0%{background-color:rgb(var(--accent) / .35)}100%{background-color:transparent}}
 .anim-flash{animation:flash 1.2s ease-out}
 @keyframes fill{from{width:0}to{width:100%}}
 .anim-fill{animation:fill linear forwards}
@@ -44,7 +44,7 @@ const CSS = `
 @keyframes faqIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 details.faq[open]>p{animation:faqIn .35s ease}
 details.faq{transition:background-color .2s ease}
-details.faq:hover{background-color:rgb(16 185 129 / .06)}
+details.faq:hover{background-color:rgb(var(--accent) / .08)}
 
 @media (prefers-reduced-motion:reduce){
   .reveal{opacity:1;transform:none;transition:none}
@@ -78,7 +78,7 @@ const MARQUEE: [string, string][] = [
   ["Toko barang", "bg-sky-500"],
   ["Toko sembako", "bg-amber-500"],
   ["Banyak cabang", "bg-violet-500"],
-  ["Cetak struk", "bg-emerald-500"],
+  ["Cetak struk", "bg-accent"],
   ["Tutup kasir", "bg-fuchsia-500"],
   ["Kasir tetap jalan tanpa internet", "bg-teal-500"],
   ["PPN fleksibel", "bg-orange-500"],
@@ -102,9 +102,11 @@ export default function Home() {
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-          <div className="anim-blob absolute -left-24 top-0 h-80 w-80 rounded-full bg-teal-400/30 blur-3xl" />
-          <div className="anim-blob absolute right-0 top-24 h-96 w-96 rounded-full bg-amber-300/30 blur-3xl [animation-delay:-5s]" />
-          <div className="anim-blob absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-sky-400/25 blur-3xl [animation-delay:-9s]" />
+          <div className="bg-aurora absolute inset-0" />
+          <div className="bg-dots absolute inset-0" />
+          <div className="anim-blob absolute -left-24 top-0 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
+          <div className="anim-blob absolute right-0 top-24 h-96 w-96 rounded-full bg-sun/30 blur-3xl [animation-delay:-5s]" />
+          <div className="anim-blob absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[rgb(var(--accent-2)/0.25)] blur-3xl [animation-delay:-9s]" />
         </div>
 
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pb-24 lg:pt-16">
@@ -112,7 +114,7 @@ export default function Home() {
             <Reveal>
               <h1 className="max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
                 Kasir yang{" "}
-                <span className="bg-gradient-to-r from-accent via-teal-500 to-amber-500 bg-flow bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-accent via-[rgb(var(--accent-2))] to-sun bg-flow bg-clip-text text-transparent">
                   paham jenis usaha Anda.
                 </span>
               </h1>
@@ -140,7 +142,7 @@ export default function Home() {
           <Reveal delay={200}>
             <div className="relative">
               <div className="anim-float"><HeroDemo /></div>
-              <div className="anim-float absolute -left-6 top-10 hidden items-center gap-2 rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-xl lg:flex [animation-delay:-2s]">
+              <div className="anim-float absolute -left-6 top-10 hidden items-center gap-2 rounded-2xl bg-accent px-4 py-2 text-sm font-bold text-white shadow-xl lg:flex [animation-delay:-2s]">
                 <Check /> Struk tercetak
               </div>
               <div className="anim-float absolute -right-3 bottom-10 hidden rounded-2xl bg-sun px-4 py-2 text-sm font-bold text-sun-ink shadow-xl lg:block [animation-delay:-3.5s]">
@@ -174,7 +176,7 @@ export default function Home() {
           <div className="mt-10 grid gap-5 lg:grid-cols-6">
             {/* Pantau kasir */}
             <Reveal className="lg:col-span-4">
-              <div className="card-hover h-full rounded-3xl border border-line border-t-4 border-t-emerald-500 bg-paper p-6 sm:p-8">
+              <div className="card-hover glow-border h-full rounded-3xl border border-line border-t-4 border-t-accent bg-paper p-6 sm:p-8">
                 <h3 className="text-2xl font-bold tracking-tight">Pantau kasir semua cabang dari mana saja</h3>
                 <p className="mt-2 max-w-[52ch] leading-7 text-muted">Kepala toko dan kepala cabang bisa melihat siapa yang sedang online, kasir mana yang masih dibuka, dan berapa penjualannya hari ini. Kasir yang terbuka tetapi terputus ditandai agar cepat dicek.</p>
                 <LiveMonitor />
@@ -183,7 +185,7 @@ export default function Home() {
 
             {/* Pembayaran */}
             <Reveal delay={120} className="lg:col-span-2">
-              <div className="card-hover h-full rounded-3xl bg-gradient-to-br from-accent via-teal-600 to-accent bg-flow p-6 text-white sm:p-8">
+              <div className="card-hover glow-border h-full rounded-3xl bg-gradient-to-br from-accent via-[rgb(var(--accent-2))] to-accent-dark bg-flow p-6 text-white sm:p-8">
                 <h3 className="text-2xl font-bold tracking-tight">Terima pembayaran dengan cara apa pun</h3>
                 <p className="mt-2 leading-7 text-white/85">Cash dan transfer bank selalu ada. Kepala toko menambah sisanya sendiri.</p>
                 <PaymentChips />
@@ -192,7 +194,7 @@ export default function Home() {
 
             {/* PPN */}
             <Reveal delay={0} className="lg:col-span-2">
-              <div className="card-hover h-full rounded-3xl border border-line border-t-4 border-t-violet-500 bg-paper p-6">
+              <div className="card-hover glow-border h-full rounded-3xl border border-line border-t-4 border-t-violet-500 bg-paper p-6">
                 <Icon tone="violet"><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /><path d="M19 5 5 19" /></Icon>
                 <h3 className="mt-4 text-xl font-bold tracking-tight">PPN sesuai aturan toko</h3>
                 <p className="mt-2 leading-7 text-muted">Nyalakan atau matikan kapan saja. Pilih 11%, 12%, atau tarif lain, dan tentukan harga sudah termasuk PPN atau belum. Struk lama tidak berubah.</p>
@@ -202,7 +204,7 @@ export default function Home() {
 
             {/* Cabang */}
             <Reveal delay={120} className="lg:col-span-2">
-              <div className="card-hover h-full rounded-3xl border border-line border-t-4 border-t-sky-500 bg-paper p-6">
+              <div className="card-hover glow-border h-full rounded-3xl border border-line border-t-4 border-t-sky-500 bg-paper p-6">
                 <Icon tone="sky"><path d="M6 3v12" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="6" r="3" /><path d="M18 9a9 9 0 0 1-9 9" /></Icon>
                 <h3 className="mt-4 text-xl font-bold tracking-tight">Banyak cabang, stok sendiri-sendiri</h3>
                 <p className="mt-2 leading-7 text-muted">Setiap cabang punya produk, kasir, dan riwayat transaksinya sendiri. Nama cabang dan jalan ikut tercetak di struk.</p>
@@ -216,7 +218,7 @@ export default function Home() {
 
             {/* Tutup kasir */}
             <Reveal delay={240} className="lg:col-span-2">
-              <div className="card-hover h-full rounded-3xl border border-line border-t-4 border-t-amber-500 bg-paper p-6">
+              <div className="card-hover glow-border h-full rounded-3xl border border-line border-t-4 border-t-amber-500 bg-paper p-6">
                 <Icon tone="amber"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 17.5v-11" /></Icon>
                 <h3 className="mt-4 text-xl font-bold tracking-tight">Tutup kasir tanpa pusing</h3>
                 <p className="mt-2 leading-7 text-muted">Isi uang yang Anda hitung di laci, dan selisihnya langsung terlihat. Hanya uang tunai yang dihitung, pembayaran lain dipisah.</p>
@@ -273,8 +275,8 @@ export default function Home() {
       {/* Ajakan */}
       <section className="mx-auto max-w-6xl px-4 pb-16 lg:pb-24">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-accent via-teal-600 to-accent bg-flow px-6 py-10 text-white sm:px-12 sm:py-14">
-            <div className="anim-blob pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-amber-300/30 blur-3xl" aria-hidden="true" />
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-accent via-[rgb(var(--accent-2))] to-accent-dark bg-flow px-6 py-10 text-white sm:px-12 sm:py-14">
+            <div className="anim-blob pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-sun/30 blur-3xl" aria-hidden="true" />
             <div className="relative flex flex-wrap items-center justify-between gap-6">
               <div>
                 <h2 className="max-w-[22ch] text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Siap mencatat penjualan hari ini?</h2>
