@@ -1,8 +1,8 @@
-
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
+import ThemeSync from "@/components/ThemeSync";
 import { themeScript } from "@/lib/themeScript";
 import { FeedbackProvider } from "@/components/Feedback";
 
@@ -38,6 +38,8 @@ export default function RootLayout({
       </head>
 
       <body className={`${sans.variable} ${mono.variable} font-sans`}>
+        {/* Menjaga tema + warna tetap sama di setiap halaman */}
+        <ThemeSync />
         <FeedbackProvider>
           {children}
           <RegisterSW />

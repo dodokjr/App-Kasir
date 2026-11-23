@@ -21,6 +21,10 @@ export const SCHEMA = {
   presence: ["id", "storeId", "branchId", "name", "role", "lastSeen", "page"],
   // TABEL BARU: preset diskon (persen / nominal) per toko
   discounts: ["id", "storeId", "name", "type", "value", "minSubtotal", "validFrom", "validTo", "active", "createdAt"],
+  // TABEL BARU: unit yang bisa dibooking / disewa / dirental, dengan harga per hari (per cabang)
+  rental_items: ["id", "storeId", "branchId", "name", "kind", "pricePerDay", "note", "active", "createdAt", "profitRate", "category"],
+  // TABEL BARU: booking, sewa, dan rental. pricePerDay disalin saat dibuat, jadi perubahan harga unit tidak mengubah yang lama
+  bookings: ["id", "storeId", "branchId", "itemId", "itemName", "kind", "customerName", "phone", "startDate", "endDate", "days", "pricePerDay", "total", "paid", "status", "note", "createdById", "createdByName", "createdAt", "updatedAt", "profitRate"],
 } as const;
 
 export type SheetName = keyof typeof SCHEMA;

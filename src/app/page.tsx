@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import SiteShell from "@/components/SiteShell";
 import HeroDemo from "@/components/HeroDemo";
 import PosDemo from "@/components/PosDemo";
-import { Faq, HeroSky, MobileCta, RevealTitle } from "@/components/PageParts";
+import { Faq, HeroGhostLink, HeroSky, HeroTone, MobileCta, RevealTitle } from "@/components/PageParts";
 import {
   Reveal,
   ScrollProgress,
@@ -136,17 +136,14 @@ export default async function Home() {
       <style>{CSS}</style>
       <ScrollProgress />
 
-      {/* Hero */}
-      <div className="relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-          <div className="bg-aurora absolute inset-0" />
-          <div className="bg-dots absolute inset-0" />
-          <div className="anim-blob absolute -left-24 top-0 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
-          <div className="anim-blob absolute right-0 top-24 h-96 w-96 rounded-full bg-sun/30 blur-3xl [animation-delay:-5s]" />
-          <div className="anim-blob absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[rgb(var(--accent-2)/0.25)] blur-3xl [animation-delay:-9s]" />
-        </div>
+      {/* Hero: ditarik ke atas (-mt) sampai di belakang navbar, lalu padding (pt) mengembalikan ruang untuk isi.
+          Ubah 76px di kedua tempat jika tinggi navbar berbeda.
+          Latar hero sekarang langit penuh (HeroSky) yang sama dengan panel demo dulu, lengkap dengan hujan.
+          HeroTone mengganti warna teks mengikuti langit (gelap saat siang, terang saat malam). */}
+      <div className="relative isolate -mt-[76px] overflow-hidden pt-[76px]">
         <HeroSky />
 
+        <HeroTone>
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:pt-14 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pb-24 lg:pt-20">
           <div>
             <h1 className="text-[clamp(2.35rem,7.5vw,4.1rem)] font-extrabold leading-[1.05] tracking-tight">
@@ -160,7 +157,7 @@ export default async function Home() {
 
             <div className="fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={d(540)}>
               <Link href="/register" className="btn-primary btn-lg justify-center transition-transform duration-150 active:scale-[0.98]">Daftarkan toko</Link>
-              <Link href="/docs" className="btn-ghost btn-lg justify-center transition-transform duration-150 active:scale-[0.98]">Lihat cara pakainya</Link>
+              <HeroGhostLink href="/docs" className="btn-lg justify-center active:scale-[0.98]">Lihat cara pakainya</HeroGhostLink>
             </div>
 
             <ul className="mt-9 space-y-3 text-base">
@@ -176,6 +173,7 @@ export default async function Home() {
             <HeroDemo />
           </div>
         </section>
+        </HeroTone>
       </div>
 
       {/* Pita bergerak, berhenti saat di-hover */}

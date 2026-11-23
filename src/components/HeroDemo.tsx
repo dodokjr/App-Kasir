@@ -1,7 +1,8 @@
 "use client";
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { useTabPill } from "@/components/Interactive";
-import { SkyLayers, SkyClock } from "@/components/PageParts";
+import { SkyClock } from "@/components/PageParts";
+import { Dash, Paper, Row } from "@/components/Receipt_page";
 
 type Key = "fnb" | "retail" | "sembako";
 const TABS: { key: Key; label: string; blurb: string }[] = [
@@ -9,22 +10,6 @@ const TABS: { key: Key; label: string; blurb: string }[] = [
   { key: "retail", label: "Toko barang", blurb: "Jual per buah. Terima cash, transfer, QRIS, atau pesanan lewat kurir online." },
   { key: "sembako", label: "Sembako dan sayur", blurb: "Timbang mulai 0,1 kg. Harga dihitung per kg sampai rupiah terakhir." },
 ];
-
-const Row = ({ a, b, bold }: { a: ReactNode; b: ReactNode; bold?: boolean }) => (
-  <div className={`flex justify-between gap-3 ${bold ? "font-semibold" : ""}`}><span>{a}</span><span className="text-right">{b}</span></div>
-);
-const Dash = () => <hr className="my-2.5 border-dashed border-black/40" />;
-
-// Kertas struk selalu putih dan hitam, sama seperti hasil cetak.
-// Saat di-hover atau difokus, kertas meluruskan diri dan terangkat sedikit.
-function Paper({ children, className = "", label }: { children: ReactNode; className?: string; label: string }) {
-  return (
-    <div role="img" aria-label={label} tabIndex={0}
-      className={`receipt-edge w-[230px] shrink-0 bg-white px-4 pt-4 font-mono text-[11.5px] leading-5 text-black shadow-[0_18px_34px_-14px_rgba(10,30,20,0.45)] outline-none transition-[transform,box-shadow] duration-300 ease-out hover:z-10 hover:rotate-0 hover:-translate-y-2 hover:shadow-[0_26px_40px_-16px_rgba(10,30,20,0.5)] focus-visible:rotate-0 focus-visible:-translate-y-2 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none sm:w-[250px] sm:text-xs ${className}`}>
-      {children}
-    </div>
-  );
-}
 
 function Fnb() {
   return (
@@ -86,17 +71,6 @@ function Sembako() {
   );
 }
 
-/* Latar panel sama dengan langit di hero: mengikuti jam di dunia nyata,
-   lengkap dengan matahari, bulan, bintang, dan deretan toko di bawah struk.
-   Chip waktu di hero ikut mengubah panel ini. */
-function Backdrop() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-      <SkyLayers solid />
-    </div>
-  );
-}
-
 export default function HeroDemo() {
   const [tab, setTab] = useState<Key>("fnb");
   const [plays, setPlays] = useState(0); // naik setiap klik tab, supaya struk dicetak ulang
@@ -122,13 +96,13 @@ export default function HeroDemo() {
         {TABS.map((t, idx) => (
           <button key={t.key} ref={(el) => { refs.current[t.key] = el; items.current[idx] = el; }} role="tab" id={`tab-${t.key}`} aria-selected={tab === t.key} aria-controls="demo-panel"
             tabIndex={tab === t.key ? 0 : -1} onClick={() => pick(t.key)}
-            className={`relative z-10 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-[color,border-color,transform] duration-200 active:scale-95 ${tab === t.key ? `border-transparent text-white ${ready ? "" : "bg-accent"}` : "border-line bg-surface hover:border-accent"}`}>
+            className={`relative z-10 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-[color,border-color,transform] duration-200 active:scale-95 ${tab === t.key ? `border-transparent text-white ${ready ? "" : "bg-accent"}` : "border-line bg-surface text-ink hover:border-accent"}`}>
             {t.label}
           </button>
         ))}
       </div>
-      <div id="demo-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="relative isolate mt-4 overflow-hidden rounded-[2rem] px-4 pb-0 pt-14 sm:px-8">
-        <Backdrop />
+      {/* Panel transparan: langit, toko, dan hujan di belakangnya adalah latar hero */}
+      <div id="demo-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="relative isolate mt-4 overflow-hidden px-4 pb-0 pt-14 sm:px-8">
         <SkyClock className="absolute right-3 top-3 z-10 sm:right-5 sm:top-4" />
         {/* key mengulang animasi cetak setiap kali tab diklik, termasuk tab yang sedang aktif */}
         <div key={`${tab}-${plays}`} className="print-in flex min-h-[420px] flex-col items-center justify-start gap-0 sm:flex-row sm:items-start sm:justify-center">

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Rolling } from "@/components/Interactive";
+import { SkyClock } from "@/components/PageParts";
+import { Dash, Paper, ReceiptBackdrop, Row } from "@/components/Receipt_page";
 
 const rp = (n: number) => "Rp " + new Intl.NumberFormat("id-ID").format(n);
 const num = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -14,23 +16,32 @@ const MENU = [
   { id: "kopi", name: "Kopi susu", price: 15000 },
   { id: "kerupuk", name: "Kerupuk", price: 3000 },
 ];
-const PPN = 0.11;
+const PPN = 0.12; // sama dengan struk di HeroDemo
 type Method = "Cash" | "QRIS";
 
-const Row = ({ a, b, bold }: { a: ReactNode; b: ReactNode; bold?: boolean }) => (
-  <div className={`flex justify-between gap-3 ${bold ? "font-semibold" : ""}`}>
-    <span>{a}</span>
-    <span className="text-right">{b}</span>
-  </div>
-);
-const Dash = () => <hr className="my-2.5 border-dashed border-black/40" />;
+/**
+ * Urutan setelah bayar:
+ * print  : struk dicetak
+ * insert : kantong naik, struk dan pesanan masuk ke kantong
+ * seal   : lipatan atas kantong menutup
+ * done   : "Pesanan dibungkus"
+ */
+type Phase = "idle" | "print" | "insert" | "seal" | "done";
 
 export default function PosDemo() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [method, setMethod] = useState<Method>("Cash");
-  const [paid, setPaid] = useState(0); // naik setiap bayar, supaya struk dicetak
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [run, setRun] = useState(0); // naik setiap bayar atau reset, supaya animasi cetak diputar ulang
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const done = paid > 0;
+  const clearTimers = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  };
+  useEffect(() => clearTimers, []);
+
+  const done = phase !== "idle";
   const lines = MENU.filter((m) => cart[m.id]);
   const sub = lines.reduce((s, m) => s + m.price * cart[m.id], 0);
   const ppn = Math.round(sub * PPN);
@@ -47,10 +58,42 @@ export default function PosDemo() {
       else delete rest[id];
       return rest;
     });
-  const reset = () => {
-    setCart({});
-    setPaid(0);
+
+  const pay = () => {
+    clearTimers();
+    setRun((n) => n + 1);
+    setPhase("print");
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const at = (ms: number, p: Phase) => timers.current.push(setTimeout(() => setPhase(p), ms));
+    if (calm) {
+      at(900, "done");
+    } else {
+      at(1400, "insert"); // setelah struk selesai dicetak
+      at(2800, "seal");
+      at(3400, "done");
+    }
   };
+
+  const reset = () => {
+    clearTimers();
+    setCart({});
+    setPhase("idle");
+    setRun((n) => n + 1);
+  };
+
+  const bagUp = phase === "insert" || phase === "seal" || phase === "done";
+  const bagMove = `transition-transform duration-700 ease-out motion-reduce:transition-none ${
+    bagUp ? "translate-y-0" : "translate-y-full"
+  }`;
+
+  const status =
+    phase === "idle"
+      ? `Total ${rp(total)}`
+      : phase === "print"
+        ? "Struk tercetak."
+        : phase === "done"
+          ? "Pesanan sudah dibungkus."
+          : "Pesanan sedang dibungkus.";
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
@@ -132,7 +175,7 @@ export default function PosDemo() {
                 <button
                   type="button"
                   disabled={sub === 0}
-                  onClick={() => setPaid((n) => n + 1)}
+                  onClick={pay}
                   className="btn-primary btn-lg w-full justify-center transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
                 >
                   Bayar dan cetak struk
@@ -147,53 +190,91 @@ export default function PosDemo() {
           </div>
         </div>
         <p className="sr-only" aria-live="polite">
-          {done ? "Struk tercetak." : `Total ${rp(total)}`}
+          {status}
         </p>
       </div>
 
-      {/* Struk */}
-      <div className="overflow-hidden rounded-[2rem] bg-sun/25 px-4 pb-0 pt-6 sm:px-8 lg:sticky lg:top-24">
-        <div className="relative z-10 mx-auto h-3 w-[250px] max-w-full rounded-full bg-black/80" aria-hidden="true" />
-        <div className="-mt-1.5 overflow-hidden">
+      {/* Struk: panel, kertas, dan animasi cetak sama dengan HeroDemo */}
+      <div className="relative isolate overflow-hidden rounded-[2rem] px-4 pb-0 pt-14 sm:px-8 lg:sticky lg:top-24">
+        <ReceiptBackdrop />
+        <SkyClock className="absolute right-3 top-3 z-10 sm:right-5 sm:top-4" />
+
+        {/* Bagian belakang kantong: terlihat sebagai bagian dalam yang gelap di atas muka kantong */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute bottom-0 left-1/2 z-[5] -ml-[115px] h-[230px] w-[230px] rounded-t-md bg-[#8a5a2b] ${bagMove}`}
+        />
+
+        {/* key mengulang animasi cetak setiap kali pembayaran dilakukan */}
+        <div key={run} className="print-in relative z-10 flex min-h-[420px] justify-center">
+          {/* Lapisan ini yang turun ke dalam kantong, dipisah dari animasi cetak di atasnya */}
           <div
-            key={paid}
-            role="img"
-            aria-label="Struk pesanan"
-            className={`${done ? "paper-print" : ""} receipt-edge mx-auto w-[250px] max-w-full bg-white px-4 pt-4 font-mono text-xs leading-5 text-black shadow-[0_18px_34px_-14px_rgba(10,30,20,0.45)]`}
+            className={`origin-bottom transition-[transform,opacity] duration-[1100ms] ease-in-out motion-reduce:transition-none ${
+              bagUp ? "translate-y-[60%] scale-[.7]" : "translate-y-0 scale-100"
+            } ${phase === "seal" || phase === "done" ? "opacity-0" : "opacity-100"}`}
           >
-            <div className="text-center">
-              <div className="text-[13px] font-bold">Warung Bu Sari</div>
-              <div>Cabang Melati</div>
-            </div>
-            <Dash />
-            {lines.length === 0 ? (
-              <p className="py-8 text-center text-neutral-500">Ketuk menu untuk mulai</p>
-            ) : (
-              lines.map((m) => (
-                <div key={m.id} className="anim-swap">
-                  <div>{m.name}</div>
-                  <Row a={`${cart[m.id]} x ${num(m.price)}`} b={num(m.price * cart[m.id])} />
-                </div>
-              ))
-            )}
-            <Dash />
-            <Row a="Subtotal" b={<Rolling value={sub} format={num} />} />
-            <Row a="PPN 11%" b={<Rolling value={ppn} format={num} />} />
-            <Row a="Total" b={<Rolling value={total} format={(n) => "Rp " + num(n)} />} bold />
-            {done && (
-              <div className="anim-swap">
-                <Row a="Pembayaran" b={method} />
-                {method === "Cash" && (
-                  <>
-                    <Row a="Tunai" b={num(tunai)} />
-                    <Row a="Kembali" b={num(tunai - total)} />
-                  </>
-                )}
+            <Paper label="Struk pesanan" className="-rotate-2">
+              <div className="text-center">
+                <div className="text-[13px] font-bold">Warung Bu Sari</div>
+                <div>Cabang Melati</div>
               </div>
-            )}
-            <div className="mt-2 text-center">Terima kasih</div>
+              <Dash />
+              <Row a="Pesanan" b="#08" />
+              <Row a="Meja" b="5" />
+              <Row a="Customer" b="Budi" />
+              <Dash />
+              {lines.length === 0 ? (
+                <p className="py-8 text-center text-neutral-500">Ketuk menu untuk mulai</p>
+              ) : (
+                lines.map((m) => (
+                  <div key={m.id} className="anim-swap">
+                    <div>{m.name}</div>
+                    <Row a={`${cart[m.id]} x ${num(m.price)}`} b={num(m.price * cart[m.id])} />
+                  </div>
+                ))
+              )}
+              <Dash />
+              <Row a="Subtotal" b={<Rolling value={sub} format={num} />} />
+              <Row a={`PPN ${Math.round(PPN * 100)}%`} b={<Rolling value={ppn} format={num} />} />
+              <Row a="Total" b={<Rolling value={total} format={(n) => "Rp " + num(n)} />} bold />
+              <Row a="Pembayaran" b={method} />
+              {done && method === "Cash" && (
+                <div className="anim-swap">
+                  <Row a="Tunai" b={num(tunai)} />
+                  <Row a="Kembali" b={num(tunai - total)} />
+                </div>
+              )}
+              <div className="mt-2 text-center">Terima kasih</div>
+            </Paper>
           </div>
         </div>
+
+        {/* Muka kantong: menutupi struk yang turun, lalu lipatan atasnya menutup */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute bottom-0 left-1/2 z-20 -ml-[115px] h-[204px] w-[230px] ${bagMove}`}
+        >
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-b-md bg-gradient-to-b from-[#d6a468] to-[#c08a4c] pt-4 font-mono text-[11px] text-[#5a3a17] shadow-[0_-6px_18px_-6px_rgba(0,0,0,0.35)]">
+            <span className="text-[13px] font-bold">Warung Bu Sari</span>
+            <span>Terima kasih</span>
+          </div>
+          <div
+            className={`absolute inset-x-0 -top-[26px] h-[44px] origin-top rounded-t-md bg-[#e2b67c] shadow-md transition-transform duration-500 ease-out motion-reduce:transition-none ${
+              phase === "seal" || phase === "done" ? "scale-y-100" : "scale-y-0"
+            }`}
+          />
+        </div>
+
+        {phase === "done" && (
+          <div className="anim-pop pointer-events-none absolute inset-x-0 top-[26%] z-30 flex justify-center px-4">
+            <span className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-black shadow-lg">
+              <svg className="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              Pesanan dibungkus
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

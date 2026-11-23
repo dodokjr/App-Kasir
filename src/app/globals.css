@@ -213,3 +213,87 @@ tbody tr:hover { background-color: rgb(var(--accent) / .06); }
   .page-in, .anim-blob, .anim-float, .anim-pop, .doc > * { animation: none !important; }
   .btn:not(:disabled):hover, .btn:not(:disabled):active, .doc .quick a:hover { transform: none; }
 }
+
+/* Tempel di akhir globals.css.
+   Jika sudah ada .theme-pop, hapus yang lama dan pakai yang ini.
+   .swatch-in, .anim-pop, dan .page-in dianggap sudah ada di proyek Anda. */
+
+/* Transisi ganti tema: matikan crossfade bawaan browser,
+   supaya hanya lingkaran yang membesar (diatur di lib/theme.ts) yang terlihat. */
+   ::view-transition-old(root),
+   ::view-transition-new(root) {
+     animation: none;
+     mix-blend-mode: normal;
+   }
+   ::view-transition-old(root) { z-index: 1; }
+   ::view-transition-new(root) { z-index: 2; }
+   
+   /* Navbar: turun halus saat halaman dibuka */
+   @keyframes nav-in {
+     from { opacity: 0; transform: translateY(-12px); }
+     to   { opacity: 1; transform: none; }
+   }
+   .nav-in { animation: nav-in .5s cubic-bezier(.2,.7,.2,1) both; }
+   
+   /* Panel tema: tumbuh dari tombolnya */
+   @keyframes theme-pop {
+     from { opacity: 0; transform: translateY(-6px) scale(.96); }
+     to   { opacity: 1; transform: none; }
+   }
+   .theme-pop { transform-origin: top right; animation: theme-pop .22s cubic-bezier(.2,.8,.2,1) both; }
+   .theme-pop[data-up="true"] { transform-origin: bottom right; }
+   .theme-pop[data-up="true"] { animation-name: theme-pop-up; }
+   @keyframes theme-pop-up {
+     from { opacity: 0; transform: translateY(6px) scale(.96); }
+     to   { opacity: 1; transform: none; }
+   }
+   
+   /* Item menu sidebar muncul bergantian */
+   @keyframes nav-item-in {
+     from { opacity: 0; transform: translateX(-8px); }
+     to   { opacity: 1; transform: none; }
+   }
+   .nav-item-in { animation: nav-item-in .35s cubic-bezier(.2,.7,.2,1) both; }
+   
+   /* Judul header berganti halus saat pindah halaman */
+   @keyframes title-in {
+     from { opacity: 0; transform: translateY(4px); }
+     to   { opacity: 1; transform: none; }
+   }
+   .title-in { animation: title-in .28s ease-out both; }
+   
+   /* Banner status offline */
+   @keyframes banner-in {
+     from { opacity: 0; transform: translateY(-100%); }
+     to   { opacity: 1; transform: none; }
+   }
+   .banner-in { animation: banner-in .3s ease-out both; }
+   
+   /* Cahaya melayang di kartu ajakan footer */
+   @keyframes float-slow {
+     0%, 100% { transform: translate3d(0, 0, 0); }
+     50%      { transform: translate3d(-18px, 14px, 0); }
+   }
+   .float-slow     { animation: float-slow 9s ease-in-out infinite; }
+   .float-slow-alt { animation: float-slow 12s ease-in-out infinite reverse; }
+   
+   /* Kartu ajakan: membesar sedikit saat masuk layar (hanya browser yang mendukung) */
+   @supports (animation-timeline: view()) {
+     @keyframes cta-rise {
+       from { opacity: .4; transform: translateY(28px) scale(.97); }
+       to   { opacity: 1; transform: none; }
+     }
+     .cta-card {
+       animation: cta-rise linear both;
+       animation-timeline: view();
+       animation-range: entry 0% entry 70%;
+     }
+   }
+   
+   /* Hormati pengguna yang mematikan animasi */
+   @media (prefers-reduced-motion: reduce) {
+     .nav-in, .theme-pop, .nav-item-in, .title-in, .banner-in,
+     .float-slow, .float-slow-alt, .cta-card {
+       animation: none !important;
+     }
+   }

@@ -582,6 +582,7 @@ function Team({ me }: { me: Me }) {
           <ul className="mt-3 space-y-1">
             {[
               ["/kasir", "kasir", "Buka kasir", "Mulai berjualan"],
+              ["/sewa", "sewa", "Booking & sewa", "Jadwal dan harga per hari"],
               ["/gudang", "gudang", "Gudang", "Produk dan stok"],
               ["/keuangan", "keuangan", "Keuangan", "Penjualan dan pengeluaran"],
               ["/target", "target", "Target dan pencapaian", "Target penjualan bulanan"],
