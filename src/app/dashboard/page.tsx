@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import Shell, { Avatar, Ico, ROLE_LABEL } from "@/components/Shell";
 import ReceiptModal from "@/components/ReceiptModal";
 import BranchSelect from "@/components/BranchSelect";
+import MemberActions from "@/components/MemberActions";
 import { useBranch } from "@/lib/useBranch";
 import { addDays, api, rp, tgl, wibDay } from "@/lib/client";
 import type { Me, ReceiptData } from "@/lib/types";
@@ -165,14 +166,14 @@ function Section({ title, count, action, delay = 0, children }: { title: string;
 }
 
 function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[]; onDone: () => void }) {
-  const [f, setF] = useState({ name: "", email: "", password: "", role: roles[0], branchId: branches?.[0]?.id ?? "" });
+  const [f, setF] = useState({ name: "", email: "", password: "", pin: "", role: roles[0], branchId: branches?.[0]?.id ?? "" });
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (branches?.length && !f.branchId) setF((p) => ({ ...p, branchId: branches[0].id })); }, [branches, f.branchId]);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { await api("/api/users", { method: "POST", body: f }); setF({ ...f, name: "", email: "", password: "" }); onDone(); }
+    try { await api("/api/users", { method: "POST", body: f }); setF({ ...f, name: "", email: "", password: "", pin: "" }); onDone(); }
     catch (x) { setErr((x as Error).message); }
     setBusy(false);
   }
@@ -185,6 +186,10 @@ function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[
         <input id="sf-pw" required minLength={6} type={show ? "text" : "password"} className="input" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
         <label className="mt-1.5 flex items-center gap-2 text-xs text-muted"><input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />Tampilkan password</label>
       </div>
+      <div>
+        <label className="label" htmlFor="sf-pin">PIN 6 digit (boleh dikosongkan)</label>
+        <input id="sf-pin" inputMode="numeric" maxLength={6} pattern="\d{6}" placeholder="Kosong = orangnya buat sendiri saat pertama masuk" className="input" value={f.pin} onChange={(e) => setF({ ...f, pin: e.target.value.replace(/\D/g, "").slice(0, 6) })} />
+      </div>
       <div><label className="label" htmlFor="sf-role">Peran</label>
         <select id="sf-role" className="input" value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>
           {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
@@ -195,7 +200,7 @@ function StaffForm({ roles, branches, onDone }: { roles: string[]; branches?: R[
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}, {b.street}</option>)}
           </select></div>
       )}
-      <p className="text-sm text-muted sm:col-span-2">Setelah dibuat, berikan email dan password ini kepada orangnya langsung.</p>
+      <p className="text-sm text-muted sm:col-span-2">Setelah dibuat, berikan email, password, dan PIN (bila diisi) ini kepada orangnya langsung.</p>
       {err && <p className="text-sm font-medium text-danger sm:col-span-2" role="alert">{err}</p>}
       <div className="sm:col-span-2"><button className="btn-primary" disabled={busy}>{busy ? "Menyimpan…" : "Tambah akun"}</button></div>
     </form>
@@ -481,6 +486,10 @@ function Team({ me }: { me: Me }) {
   const onlineN = cashiers.filter((r) => r.status === "online").length;
   const alerts = cashiers.filter((r) => r.alert);
 
+  // Tim: siapa yang boleh dikelola (sama dengan aturan server)
+  const manageRoles = owner ? ["kepala_cabang", "kasir", "gudang"] : ["kasir", "gudang"];
+  const canManage = (u: R) => u.id !== me.session.uid && manageRoles.includes(u.role);
+
   // Tim: filter peran dan pencarian
   const roleList = Array.from(new Set(branchUsers.map((u) => u.role)));
   const teamRows = branchUsers.filter((u) => {
@@ -706,17 +715,19 @@ function Team({ me }: { me: Me }) {
           )}
           <div className="-mx-5 overflow-x-auto">
             <table className="w-full">
-              <thead><tr><th className="th pl-5">Nama</th><th className="th">Peran</th><th className="th">Cabang</th><th className="th pr-5">Email</th></tr></thead>
+              <thead><tr><th className="th pl-5">Nama</th><th className="th">Peran</th><th className="th">Cabang</th><th className="th">Email</th><th className="th">PIN</th><th className="th pr-5 text-right">Aksi</th></tr></thead>
               <tbody className="divide-y divide-line">
                 {teamRows.map((u) => (
                   <tr key={u.id} className="transition-colors hover:bg-paper">
                     <td className="td pl-5"><div className="flex items-center gap-3"><Avatar name={u.name} size={32} /><span className="font-semibold">{u.name}</span></div></td>
                     <td className="td"><span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent dark:text-link">{ROLE_LABEL[u.role]}</span></td>
-                    <td className="td">{bname(u.branchId)}</td><td className="td pr-5 text-muted"><CopyText text={u.email} /></td>
+                    <td className="td">{bname(u.branchId)}</td><td className="td text-muted"><CopyText text={u.email} /></td>
+                    <td className="td"><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.hasPin === "TRUE" ? "bg-accent/10 text-accent dark:text-link" : "bg-danger/10 text-danger"}`}>{u.hasPin === "TRUE" ? "Sudah" : "Belum"}</span>{u.active === "FALSE" && <span className="ml-2 rounded-full bg-danger/10 px-2.5 py-0.5 text-xs font-semibold text-danger">Nonaktif</span>}</td>
+                    <td className="td pr-5 text-right">{canManage(u) ? <MemberActions u={u} onDone={load} onNote={setNote} /> : <span className="text-xs text-muted">-</span>}</td>
                   </tr>
                 ))}
-                {ready && !branchUsers.length && <tr><td className="td pl-5 text-muted" colSpan={4}>Belum ada anggota tim. Tambahkan kasir pertama Anda.</td></tr>}
-                {ready && branchUsers.length > 0 && !teamRows.length && <tr><td className="td pl-5 text-muted" colSpan={4}>Tidak ada anggota tim yang cocok.</td></tr>}
+                {ready && !branchUsers.length && <tr><td className="td pl-5 text-muted" colSpan={6}>Belum ada anggota tim. Tambahkan kasir pertama Anda.</td></tr>}
+                {ready && branchUsers.length > 0 && !teamRows.length && <tr><td className="td pl-5 text-muted" colSpan={6}>Tidak ada anggota tim yang cocok.</td></tr>}
               </tbody>
             </table>
           </div>

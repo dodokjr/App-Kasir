@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, sampleFor, withTax, type ReceiptSettings } from "@/li
 import { BUSINESS_TYPES, DISCOUNT_TYPES, discountLabel, type DiscountPreset, type DiscountType, DEFAULT_TAX, GROUP_LABEL, PAYMENT_PRESETS, TAX_PRESETS, methodAllowed, calcTax, fmtRate, normRate, type BusinessType, type PayGroup, type PayMethod, type TaxConfig } from "@/lib/business";
 import { api, rp } from "@/lib/client";
 import type { Me } from "@/lib/types";
+import PinChangeSection from "@/components/PinChangeSection";
 
 
 function Check({ id, label, v, on, disabled }: { id: string; label: string; v: boolean; on: (b: boolean) => void; disabled: boolean }) {
@@ -225,6 +226,8 @@ function Settings({ me }: { me: Me }) {
         <h2 className="font-semibold">Tampilan</h2>
         <div className="max-w-sm"><ThemePanel /></div>
       </section>
+
+      <PinChangeSection />
 
       {owner && <BusinessSection type={biz} onChange={setBiz} />}
       {owner && <TaxSection tax={tax} onSaved={setTax} />}

@@ -129,7 +129,7 @@ const FAQ = [
 const d = (ms: number) => ({ ["--d" as string]: `${ms}ms` });
 
 export default async function Home() {
-  const s = await getSession();
+  const s = await getSession({ check: false }).catch(() => null);
 
   return (
     <SiteShell>

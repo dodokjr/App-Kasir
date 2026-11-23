@@ -16,6 +16,8 @@ export type ReceiptData = {
 };
 export type Me = {
   session: { uid: string; name: string; role: string; storeId: string; branchId: string };
+  /** false = akun belum punya PIN (akun lama). undefined = data lama dari cache */
+  hasPin?: boolean;
   store: { name: string; businessType: BusinessType } | null;
   branch: { name: string; street: string } | null;
 };

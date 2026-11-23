@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
-import { api } from "@/lib/client";
+import { useEffect, useState, type ReactNode } from "react";
+import { api, ApiError } from "@/lib/client";
 import AuthShell from "@/components/AuthShell";
 import PasswordInput from "@/components/PasswordInput";
+import OtpInput from "@/components/OtpInput";
+import PinSetup from "@/components/PinSetup";
 import { AuthStyles, Toast, Field, SubmitButton, StrengthMeter, EMAIL_RE, suggestEmail } from "@/components/AuthBits";
 
 const TYPES: { v: string; label: string; hint: string; example: string; icon: ReactNode }[] = [
@@ -54,6 +56,17 @@ export default function Register() {
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [step, setStep] = useState<"form" | "otp" | "setpin">("form");
+  const [token, setToken] = useState("");
+  const [code, setCode] = useState("");
+  const [resendIn, setResendIn] = useState(0);
+  const [verifying, setVerifying] = useState(false);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = window.setInterval(() => setResendIn((n) => Math.max(0, n - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [resendIn > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const locked = busy || done;
   const errs = Object.fromEntries(ORDER.map((k) => [k, validators[k](f[k])])) as Record<Key, string>;
@@ -95,17 +108,49 @@ export default function Register() {
 
     setBusy(true);
     try {
-      await api("/api/auth/register", {
+      const r = await api<{ token: string; resendIn: number }>("/api/auth/register", {
         method: "POST",
         body: { ...f, name: f.name.trim(), email: f.email.trim(), storeName: f.storeName.trim() },
       });
-      setBusy(false);
-      setDone(true);
-      router.replace("/dashboard");
+      setToken(r.token);
+      setResendIn(r.resendIn);
+      setCode("");
+      setStep("otp");
     } catch (error) {
       setServerErr(error instanceof Error ? error.message : "Registrasi gagal. Silakan coba kembali.");
+      if (error instanceof ApiError && typeof error.data?.retryAfter === "number") setResendIn(error.data.retryAfter);
       triggerShake();
-      setBusy(false);
+    }
+    setBusy(false);
+  }
+
+  async function verify(c: string) {
+    if (verifying || c.length !== 6) return;
+    setVerifying(true);
+    setServerErr("");
+    try {
+      const r = await api<{ token: string }>("/api/auth/register/verify", { method: "POST", body: { token, code: c } });
+      setToken(r.token);
+      setStep("setpin");
+    } catch (error) {
+      setServerErr(error instanceof Error ? error.message : "Kode salah.");
+      triggerShake();
+      setCode("");
+      if (error instanceof ApiError && error.data?.expired) setResendIn(0);
+    }
+    setVerifying(false);
+  }
+
+  async function resend() {
+    if (resendIn > 0) return;
+    setServerErr("");
+    try {
+      const r = await api<{ resendIn: number }>("/api/auth/register/resend", { method: "POST", body: { token } });
+      setResendIn(r.resendIn);
+      setCode("");
+    } catch (error) {
+      setServerErr(error instanceof Error ? error.message : "Gagal mengirim ulang kode.");
+      if (error instanceof ApiError && typeof error.data?.retryAfter === "number") setResendIn(error.data.retryAfter);
     }
   }
 
@@ -115,8 +160,12 @@ export default function Register() {
       <Toast title="Registrasi gagal" message={serverErr} onClose={() => setServerErr("")} />
 
       <AuthShell
-        title="Daftarkan toko Anda"
-        subtitle="Buat akun kepala toko dan mulai berjualan hari ini."
+        title={step === "form" ? "Daftarkan toko Anda" : step === "otp" ? "Cek email Anda" : "Buat PIN Anda"}
+        subtitle={
+          step === "form" ? "Buat akun kepala toko dan mulai berjualan hari ini."
+          : step === "otp" ? `Kami mengirim kode 6 digit ke ${f.email.trim()}. Berlaku 10 menit.`
+          : "Langkah terakhir. PIN dipakai setiap kali masuk, setelah password."
+        }
         footer={
           <>
             Sudah punya akun?{" "}
@@ -124,6 +173,29 @@ export default function Register() {
           </>
         }
       >
+        {step === "otp" && (
+          <div className={`space-y-4 ${shake ? "auth-shake" : ""}`}>
+            <OtpInput label="Kode OTP" value={code} onChange={setCode} onComplete={verify} autoFocus disabled={verifying} />
+            <button type="button" disabled={code.length !== 6 || verifying} onClick={() => verify(code)} className="btn-primary auth-press w-full disabled:cursor-not-allowed disabled:opacity-60">
+              {verifying ? "Memeriksa..." : "Verifikasi"}
+            </button>
+            <p className="text-center text-sm text-muted">
+              Tidak menerima kode?{" "}
+              {resendIn > 0 ? <span className="tabular-nums">Kirim ulang dalam {resendIn} detik</span> : (
+                <button type="button" onClick={resend} className="font-semibold text-link underline underline-offset-2">Kirim ulang</button>
+              )}
+            </p>
+            <p className="text-center text-sm">
+              <button type="button" onClick={() => { setStep("form"); setCode(""); }} className="text-muted underline underline-offset-2">Ubah data pendaftaran</button>
+            </p>
+          </div>
+        )}
+
+        {step === "setpin" && (
+          <PinSetup token={token} onError={(m) => { setServerErr(m); triggerShake(); }} onDone={() => router.replace("/dashboard")} />
+        )}
+
+        {step === "form" && (
         <form onSubmit={submit} noValidate className={`space-y-1 ${shake ? "auth-shake" : ""}`}>
           {/* Kemajuan pengisian */}
           <div className="auth-rise pb-2" aria-live="polite">
@@ -282,9 +354,9 @@ export default function Register() {
             <SubmitButton
               busy={busy}
               done={done}
-              idle="Daftarkan toko"
-              working="Mendaftarkan..."
-              success="Toko terdaftar, membuka dashboard"
+              idle="Daftar dan kirim kode OTP"
+              working="Mengirim kode..."
+              success="Kode terkirim"
             />
           </div>
 
@@ -294,6 +366,7 @@ export default function Register() {
             kami.
           </p>
         </form>
+        )}
       </AuthShell>
     </>
   );

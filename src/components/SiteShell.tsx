@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export default async function SiteShell({ children }: { children: ReactNode }) {
-  const s = await getSession();
+  const s = await getSession({ check: false }).catch(() => null);
   return (
     <div className="relative isolate flex min-h-screen flex-col">
       <a

@@ -181,6 +181,8 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
 
   const router = useRouter();
   const path = usePathname();
+  const [pinHint, setPinHint] = useState(true); // true dulu agar tidak berkedip; diatur dari sessionStorage di bawah
+  useEffect(() => { try { setPinHint(sessionStorage.getItem("kt:pin-hint") === "1"); } catch { setPinHint(false); } }, []);
   const online = useOnline();
 
   const [loadErr, setLoadErr] = useState("");
@@ -605,6 +607,15 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
           )}
           {queue.otherAccounts > 0 && <>Ada {queue.otherAccounts} transaksi offline milik akun lain di perangkat ini. </>}
           {online && fromCache && queue.total === 0 && <>Menampilkan data tersimpan.</>}
+        </div>
+      )}
+
+      {/* Akun lama yang belum punya PIN: sarankan membuat sekarang */}
+      {me.hasPin === false && !pinHint && path !== "/pengaturan" && (
+        <div role="status" className="mx-auto mt-4 flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 sm:mx-6 xl:mx-8">
+          <span className="flex-1"><b>Akun Anda belum punya PIN.</b> Buat PIN 6 digit sekarang agar akun lebih aman. PIN akan diminta setiap kali masuk.</span>
+          <Link href="/pengaturan" className="btn-primary">Buat PIN</Link>
+          <button type="button" className="btn-ghost" onClick={() => { try { sessionStorage.setItem("kt:pin-hint", "1"); } catch {} setPinHint(true); }}>Nanti</button>
         </div>
       )}
 

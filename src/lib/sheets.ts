@@ -3,7 +3,7 @@ import { google } from "googleapis";
 export const SCHEMA = {
   stores: ["id", "name", "active", "createdAt", "businessType", "ppnEnabled", "ppnRate", "ppnMode"],
   branches: ["id", "storeId", "name", "street", "createdAt", "lat", "lng"],
-  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt"],
+  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt", "pinHash", "kickedAt"],
   products: ["id", "storeId", "branchId", "sku", "name", "price", "stock", "createdAt", "unit", "imageVer"],
   transactions: ["id", "invoice", "storeId", "branchId", "cashierId", "cashierName", "total", "paid", "change", "createdAt", "paymentKey", "paymentLabel", "paymentRef", "orderType", "tableNo", "customerName", "orderNo", "subtotal", "taxAmount", "taxRate", "taxMode"],
   transaction_items: ["id", "transactionId", "productId", "name", "price", "qty", "subtotal", "unit", "note"],
@@ -25,6 +25,9 @@ export const SCHEMA = {
   rental_items: ["id", "storeId", "branchId", "name", "kind", "pricePerDay", "note", "active", "createdAt", "profitRate", "category"],
   // TABEL BARU: booking, sewa, dan rental. pricePerDay disalin saat dibuat, jadi perubahan harga unit tidak mengubah yang lama
   bookings: ["id", "storeId", "branchId", "itemId", "itemName", "kind", "customerName", "phone", "startDate", "endDate", "days", "pricePerDay", "total", "paid", "status", "note", "createdById", "createdByName", "createdAt", "updatedAt", "profitRate"],
+  // TABEL BARU: status autentikasi (OTP pendaftaran + penghitung gagal login).
+  // kind "reg": satu pendaftaran menunggu OTP (phase = jumlah kirim ulang). kind "lock": penghitung gagal per email (phase = tahap pembekuan)
+  auth_state: ["id", "kind", "key", "hash", "data", "attempts", "phase", "lockUntil", "expiresAt", "sentAt"],
 } as const;
 
 export type SheetName = keyof typeof SCHEMA;
@@ -198,5 +201,23 @@ export async function updateMany(name: SheetName, patches: { id: string; patch: 
   }
   try {
     await client().spreadsheets.values.batchUpdate({ spreadsheetId: sid(), requestBody: { valueInputOption: "RAW", data } });
+  } finally { touch(name); }
+}
+
+// Hapus satu baris permanen (kolom pertama selalu id). Baris dicari dari data terbaru, bukan dari cache
+export async function remove(name: SheetName, id: string) {
+  await init();
+  const rows = await all(name, { fresh: true });
+  const i = rows.findIndex((r) => r.id === id);
+  if (i < 0) throw new Error("Data tidak ditemukan");
+  const meta = await client().spreadsheets.get({ spreadsheetId: sid(), fields: "sheets.properties(sheetId,title)" });
+  const sheetId = meta.data.sheets?.find((x) => x.properties?.title === name)?.properties?.sheetId;
+  if (sheetId == null) throw new Error(`Tab "${name}" tidak ditemukan`);
+  try {
+    // baris data pertama ada di indeks 1 (indeks 0 = header)
+    await client().spreadsheets.batchUpdate({
+      spreadsheetId: sid(),
+      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: i + 1, endIndex: i + 2 } } }] },
+    });
   } finally { touch(name); }
 }

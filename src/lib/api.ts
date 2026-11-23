@@ -3,7 +3,7 @@ import { getSession, type Role, type Session } from "./auth";
 import { isQuotaError, type Row } from "./sheets";
 
 export class HttpError extends Error {
-  constructor(public status: number, msg: string) { super(msg); }
+  constructor(public status: number, msg: string, public data?: Record<string, unknown>) { super(msg); }
 }
 
 export async function need(roles?: Role[]): Promise<Session> {
@@ -27,7 +27,7 @@ export function handle(fn: (req: Request) => Promise<unknown>) {
       // Respons mentah (misalnya gambar) diteruskan apa adanya
       return out instanceof Response ? out : NextResponse.json(out);
     } catch (e) {
-      if (e instanceof HttpError) return NextResponse.json({ error: e.message }, { status: e.status });
+      if (e instanceof HttpError) return NextResponse.json({ error: e.message, ...e.data }, { status: e.status });
       if (isQuotaError(e)) {
         console.warn("[sheets] kuota baca Google Sheets habis");
         return NextResponse.json({ error: "Layanan sedang sibuk (batas permintaan Google Sheets). Tunggu sekitar 1 menit lalu coba lagi." }, { status: 429 });

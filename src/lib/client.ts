@@ -1,7 +1,7 @@
 /** Galat dari server (status HTTP) atau jaringan (status 0, network = true) */
 export class ApiError extends Error {
-  status: number; network: boolean;
-  constructor(message: string, status: number, network = false) { super(message); this.status = status; this.network = network; }
+  status: number; network: boolean; data: Record<string, any>;
+  constructor(message: string, status: number, network = false, data: Record<string, any> = {}) { super(message); this.status = status; this.network = network; this.data = data; }
 }
 export const isNetworkError = (e: unknown) => e instanceof ApiError && e.network;
 
@@ -22,7 +22,7 @@ export async function api<T = any>(url: string, init?: { method?: string; body?:
   }
   netEvent(true);
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new ApiError(d.error || "Permintaan gagal", r.status);
+  if (!r.ok) throw new ApiError(d.error || "Permintaan gagal", r.status, false, d);
   return d as T;
 }
 export const rp = (n: number | string) => "Rp " + Number(n).toLocaleString("id-ID");
