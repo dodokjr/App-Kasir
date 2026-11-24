@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AuthLink from "@/components/AuthLink";
 
 export default function Memulai() {
   return (
@@ -12,15 +13,16 @@ export default function Memulai() {
         <li><Link href="/docs/tutup-kasir"><strong>Saya kasir</strong><span>Cara membuka kasir, melayani pembeli, dan menutup kasir.</span></Link></li>
         <li><Link href="/docs/peran"><strong>Saya kepala toko atau kepala cabang</strong><span>Siapa boleh melakukan apa, dan cara menambah tim.</span></Link></li>
         <li><Link href="/docs/jenis-usaha"><strong>Saya ingin mengatur PPN dan pembayaran</strong><span>Jenis usaha, metode pembayaran, PPN, dan pantau kasir.</span></Link></li>
+        <li><Link href="/docs/keamanan"><strong>Saya ingin mengamankan akun atau lupa password</strong><span>Lupa password, ganti password, dan aturan satu akun satu perangkat.</span></Link></li>
         <li><Link href="/docs/instalasi"><strong>Saya yang memasang aplikasi</strong><span>Menyiapkan Google Sheets dan menjalankan aplikasi.</span></Link></li>
       </ul>
 
       <h2 id="daftar">1. Daftarkan toko</h2>
       <ol>
-        <li>Buka halaman <Link href="/register">Daftarkan toko</Link>.</li>
+        <li>Buka halaman <AuthLink href="/register">Daftarkan toko</AuthLink> (bila Anda sudah masuk, tautan ini membawa Anda ke dashboard).</li>
         <li>Pilih jenis usaha: makanan dan minuman, toko barang, sembako, atau lainnya.</li>
         <li>Isi nama toko, nama cabang pertama (kosongkan untuk memakai nama &quot;Pusat&quot;), dan nama jalan cabang.</li>
-        <li>Isi nama, email, dan password untuk akun kepala toko. Password minimal 6 karakter.</li>
+        <li>Isi nama, email, dan password untuk akun kepala toko. Password minimal 8 karakter.</li>
       </ol>
       <p>Setelah itu Anda langsung masuk ke dashboard sebagai kepala toko.</p>
 
@@ -37,7 +39,7 @@ export default function Memulai() {
       <p>Di akhir shift kasir menutup kasir untuk melihat total penjualan dan selisih uang di laci. Kepala toko dan kepala cabang bisa melihat rekap di <Link href="/docs/keuangan">halaman Keuangan</Link> dan mengatur isi struk di <Link href="/docs/struk-tema">Pengaturan</Link>.</p>
 
       <h2>Lupa password?</h2>
-      <p>Fitur reset password belum tersedia. Hubungi kepala toko atau <Link href="/kontak">pengelola layanan</Link> untuk dibuatkan akun baru.</p>
+      <p>Di halaman <AuthLink href="/login">Masuk</AuthLink> klik <code>Lupa password?</code>, masukkan email akun, lalu isi kode 6 digit yang dikirim ke email itu dan buat password baru. Detailnya ada di <Link href="/docs/keamanan">Keamanan akun dan password</Link>. Kalau email Anda tidak bisa dipakai lagi, hubungi kepala toko atau <Link href="/kontak">pengelola layanan</Link>.</p>
     </>
   );
 }

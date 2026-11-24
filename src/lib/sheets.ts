@@ -3,7 +3,7 @@ import { google } from "googleapis";
 export const SCHEMA = {
   stores: ["id", "name", "active", "createdAt", "businessType", "ppnEnabled", "ppnRate", "ppnMode"],
   branches: ["id", "storeId", "name", "street", "createdAt", "lat", "lng"],
-  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt", "pinHash", "kickedAt"],
+  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt", "pinHash", "kickedAt", "phone", "sessionId", "sessionExp"],
   products: ["id", "storeId", "branchId", "sku", "name", "price", "stock", "createdAt", "unit", "imageVer"],
   transactions: ["id", "invoice", "storeId", "branchId", "cashierId", "cashierName", "total", "paid", "change", "createdAt", "paymentKey", "paymentLabel", "paymentRef", "orderType", "tableNo", "customerName", "orderNo", "subtotal", "taxAmount", "taxRate", "taxMode"],
   transaction_items: ["id", "transactionId", "productId", "name", "price", "qty", "subtotal", "unit", "note"],

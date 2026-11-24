@@ -18,9 +18,9 @@ const emailError = (v: string) =>
 
 const TITLES: Record<Step, [string, string]> = {
   email: ["Selamat datang kembali", "Masukkan email akun Anda untuk melanjutkan."],
-  password: ["Masukkan password", "Langkah 2 dari 4."],
-  human: ["Verifikasi keamanan", "Langkah 3 dari 4. Pastikan Anda bukan robot."],
-  pin: ["Masukkan PIN", "Langkah 4 dari 4. PIN 6 digit Anda."],
+  password: ["Masukkan password", "Masukkan password akun Anda."],
+  human: ["Verifikasi keamanan", "Pastikan Anda bukan robot."],
+  pin: ["Masukkan PIN", "Masukkan PIN 6 digit Anda."],
   setpin: ["Buat PIN Anda", "Akun ini belum punya PIN. Buat dulu sebelum membuka dashboard."],
 };
 
@@ -139,6 +139,7 @@ export default function Login() {
       <AuthShell
         title={title}
         subtitle={subtitle}
+        step={{ at: ({ email: 1, password: 2, human: 3, pin: 4, setpin: 4 } as Record<Step, number>)[step], of: 4 }}
         footer={
           <>
             Belum punya akun?{" "}
@@ -163,6 +164,7 @@ export default function Login() {
               ) : undefined}
             >
               <input
+                suppressHydrationWarning
                 id="email" name="email" type="email" autoComplete="email" placeholder="nama@toko.com" className="input pr-10"
                 value={email} disabled={disabled} aria-invalid={!!eErr} data-ok={touchedEmail && !eErr && !!email}
                 onBlur={() => setTouchedEmail(true)}
@@ -189,6 +191,7 @@ export default function Login() {
                 <PasswordInput id="pw" autoComplete="current-password" value={password} disabled={disabled} onChange={(v) => { setPassword(v); setServerErr(""); }} />
               </div>
             </Field>
+            <p className="pb-3 text-right text-sm"><Link href="/lupa-password" className="font-medium text-link underline underline-offset-2">Lupa password?</Link></p>
             <SubmitButton busy={busy} done={false} idle="Lanjut" working="Memeriksa..." success="" />
           </form>
         )}

@@ -21,8 +21,15 @@ JWT_SECRET=string-acak-minimal-32-karakter
 DEVELOPER_EMAIL=dev@contoh.com
 DEVELOPER_PASSWORD=password-awal
 NEXT_PUBLIC_CONTACT_EMAIL=halo@contoh.com
+NEXT_PUBLIC_CONTACT_PHONE=+6281234567890
+EMAILJS_SERVICE_ID=...
+EMAILJS_PUBLIC_KEY=...
+EMAILJS_PRIVATE_KEY=...
+EMAILJS_TEMPLATE_OTP=...
+EMAILJS_TEMPLATE_ALERT=...
 NEXT_PUBLIC_OPERATOR_NAME=Nama Pengelola
 NEXT_PUBLIC_OPERATOR_ADDRESS=Alamat Pengelola`}</pre>
+      <p><code>NEXT_PUBLIC_CONTACT_PHONE</code> opsional dan tampil di halaman Kontak, Pengaturan, dan panduan Keamanan. Variabel <code>EMAILJS_*</code> dipakai untuk mengirim kode OTP (pendaftaran dan lupa password) serta email peringatan percobaan masuk. Di EmailJS, aktifkan <em>Allow EmailJS API for non-browser applications</em>, dan isi kolom To Email di template dengan <code>{'{{to_email}}'}</code>.</p>
       <p>Jangan pernah memasukkan <code>.env.local</code> ke Git. Isinya rahasia.</p>
 
       <h2>3. Jalankan</h2>
@@ -35,9 +42,10 @@ npm run dev`}</pre>
         <li><code>stores</code>, <code>branches</code>, <code>users</code></li>
         <li><code>products</code>, <code>transactions</code>, <code>transaction_items</code></li>
         <li><code>messages</code> (pesan dari halaman Kontak)</li>
+        <li><code>rental_items</code> dan <code>bookings</code> (unit dan booking, sewa, rental), <code>auth_state</code> (kode OTP dan penghitung salah masuk), <code>presence</code> (status online kasir)</li>
         <li><code>shifts</code> (buka–tutup kasir), <code>expenses</code> (pengeluaran), dan <code>receipt_settings</code> (pengaturan struk)</li>
       </ul>
-      <p>Jangan mengubah nama tab atau urutan kolom. Jika Anda memperbarui dari versi lama, tab baru dibuat otomatis saat pertama kali dipakai dan data lama tidak terpengaruh.</p>
+      <p>Jangan mengubah nama tab atau urutan kolom. Jika Anda memperbarui dari versi lama, tab baru dibuat otomatis saat pertama kali dipakai dan data lama tidak terpengaruh. Tab <code>users</code> mendapat kolom baru <code>phone</code>, <code>sessionId</code>, dan <code>sessionExp</code> secara otomatis.</p>
 
       <h2>Deploy</h2>
       <p>Saat deploy ke layanan hosting, masukkan semua variabel di atas lewat pengaturan environment layanan tersebut. Untuk <code>GOOGLE_PRIVATE_KEY</code>, pertahankan karakter <code>\n</code> apa adanya.</p>

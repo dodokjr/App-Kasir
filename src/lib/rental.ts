@@ -122,3 +122,18 @@ export const PAY_LABEL: Record<PayState, string> = { lunas: "Lunas", dp: "Sebagi
 
 export const fmtDate = (d: string) => (isDate(d) ? new Date(d + "T00:00:00Z").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "-");
 export const fmtRange = (s: string, e: string) => (s === e ? fmtDate(s) : `${fmtDate(s)} – ${fmtDate(e)}`);
+
+// ---- Nota (struk) booking, sewa, dan rental ----
+export type NotaInfo = { storeName: string; branchName: string; street: string };
+/** Nomor nota, mis. SWA-20261124-A1B2. Dibentuk dari tanggal buat (WIB) dan id, jadi selalu sama untuk booking yang sama */
+export function notaNo(b: Pick<Booking, "kind" | "id" | "createdAt">) {
+  const p = b.kind === "sewa" ? "SWA" : b.kind === "rental" ? "RTL" : "BKG";
+  const t = Date.parse(b.createdAt);
+  const d = isNaN(t) ? "00000000" : new Date(t).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }).replace(/-/g, "");
+  return `${p}-${d}-${b.id.replace(/[^a-z0-9]/gi, "").slice(0, 4).toUpperCase()}`;
+}
+/** Teks "lunas" atau sisa tagihan untuk nota */
+export const notaPayLine = (b: Pick<Booking, "paid" | "total">) => {
+  const left = Math.max(0, b.total - b.paid);
+  return { left, state: payState(b.paid, b.total) };
+};

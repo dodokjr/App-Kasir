@@ -49,9 +49,9 @@ function hint(status: number, t: string) {
 }
 
 /** Template OTP memakai: {{to_email}}, {{to_name}}, {{passcode}}, {{time}} (jam kedaluwarsa, WIB), {{expires_min}}, {{app_name}} */
-export const sendOtpEmail = (to: string, name: string, code: string) =>
+export const sendOtpEmail = (to: string, name: string, code: string, purpose = "pendaftaran akun") =>
   send("EMAILJS_TEMPLATE_OTP", {
-    to_email: to, to_name: name, passcode: code, otp_code: code, expires_min: "10", app_name: "Galaxy Kasir",
+    to_email: to, to_name: name, passcode: code, otp_code: code, purpose, expires_min: "10", app_name: "Galaxy Kasir",
     time: new Date(Date.now() + 10 * 60_000).toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" }) + " WIB",
   });
 

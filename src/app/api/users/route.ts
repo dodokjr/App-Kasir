@@ -34,7 +34,7 @@ export const GET = handle(async () => {
   let rows = await all("users");
   if (s.role === "kepala_toko") rows = rows.filter((u) => u.storeId === s.storeId);
   if (s.role === "kepala_cabang") rows = rows.filter((u) => u.branchId === s.branchId);
-  return rows.map(({ passwordHash, pinHash, kickedAt, ...r }) => ({ ...r, hasPin: pinHash ? "TRUE" : "FALSE" }));
+  return rows.map(({ passwordHash, pinHash, kickedAt, sessionId, sessionExp, ...r }) => ({ ...r, hasPin: pinHash ? "TRUE" : "FALSE" }));
 });
 
 export const POST = handle(async (req) => {
@@ -59,7 +59,7 @@ export const POST = handle(async (req) => {
   }
   await add("users", {
     id: uid(), storeId, branchId, name, email, passwordHash: await bcrypt.hash(String(b.password), 10),
-    role, active: "TRUE", createdAt: now(), pinHash: pin ? await bcrypt.hash(pin, 10) : "", kickedAt: "",
+    role, active: "TRUE", createdAt: now(), pinHash: pin ? await bcrypt.hash(pin, 10) : "", kickedAt: "", phone: "", sessionId: "", sessionExp: "",
   });
   return { ok: true };
 });
@@ -71,13 +71,13 @@ export const PATCH = handle(async (req) => {
   const u = await target(s, b.id);
 
   if (b.action === "kick") {
-    await update("users", u.id, { kickedAt: String(Date.now()) });
+    await update("users", u.id, { kickedAt: String(Date.now()), sessionId: "", sessionExp: "" });
     await leave(u.id).catch(() => {});
     return { ok: true };
   }
   if (b.action === "active") {
     const on = !!b.active;
-    await update("users", u.id, on ? { active: "TRUE" } : { active: "FALSE", kickedAt: String(Date.now()) });
+    await update("users", u.id, on ? { active: "TRUE" } : { active: "FALSE", kickedAt: String(Date.now()), sessionId: "", sessionExp: "" });
     if (!on) await leave(u.id).catch(() => {});
     return { ok: true };
   }

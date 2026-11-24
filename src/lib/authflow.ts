@@ -7,7 +7,7 @@ import { sendAlertEmail } from "./mail";
 /* ---------- Token tahap (stateless) ----------
  * Setiap langkah login/registrasi menghasilkan token pendek yang hanya berlaku untuk langkah berikutnya,
  * jadi langkah tidak bisa dilompati (misalnya langsung ke PIN tanpa password). */
-export type Step = "password" | "human" | "pin" | "setpin" | "otp";
+export type Step = "password" | "human" | "pin" | "setpin" | "otp" | "reset" | "newpw";
 export type Stage = { step: Step; email: string; uid?: string; ref?: string; iat?: number };
 
 const secret = () => {

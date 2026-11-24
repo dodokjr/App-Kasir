@@ -212,6 +212,7 @@ export default function ThemeToggle() {
         onClick={() => setOpen((o) => !o)}
         aria-label="Atur tampilan dan warna"
         title="Atur tampilan dan warna"
+        suppressHydrationWarning // DIUBAH: ekstensi browser (autofill) menambah atribut fdprocessedid sebelum hydrate
       >
         <span
           aria-hidden

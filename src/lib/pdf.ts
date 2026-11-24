@@ -1,5 +1,6 @@
 import type { ReceiptData } from "./types";
 import { DEFAULT_SETTINGS, type ReceiptSettings } from "./receiptSettings";
+import { fmtDate, kindLabel, notaNo, notaPayLine, statusLabel, type Booking, type NotaInfo } from "./rental";
 import { fmtQty, fmtRate, isCash, isFoodDelivery, orderTypeLabel } from "./business";
 
 const rp = (n: number) => "Rp " + n.toLocaleString("id-ID");
@@ -101,4 +102,38 @@ export async function downloadKitchenPdf(r: ReceiptData, s: ReceiptSettings = DE
     t.rule();
     t.center(r.invoice, 8);
   }, `dapur-${r.invoice}.pdf`);
+}
+
+// Nota booking / sewa / rental. Tanpa data keuntungan dan modal (itu hanya untuk pengelola)
+export async function downloadBookingPdf(b: Booking, info: NotaInfo, s: ReceiptSettings = DEFAULT_SETTINGS) {
+  const { left, state } = notaPayLine(b);
+  await make(s.paper, (t) => {
+    t.center(s.storeName || info.storeName, 11, true);
+    if (info.branchName) t.center(`Cabang ${info.branchName}`, 8);
+    if (info.street) t.center(info.street, 8);
+    if (s.address) t.center(s.address, 8);
+    if (s.phone) t.center(`Telp ${s.phone}`, 8);
+    if (s.header) { t.skip(1); t.rule(); t.center(s.header, 8); }
+    t.skip(2); t.rule();
+    t.center(`NOTA ${kindLabel(b.kind).toUpperCase()}`, 10, true);
+    t.skip(1); t.rule();
+    t.lr("No", notaNo(b));
+    t.lr("Dibuat", when(b.createdAt));
+    if (b.createdByName) t.lr("Kasir", b.createdByName);
+    t.lr("Status", statusLabel(b.status));
+    t.rule();
+    t.lr("Pelanggan", b.customerName);
+    if (b.phone) t.lr("Telepon", b.phone);
+    t.rule();
+    t.text(b.itemName, 9, true);
+    t.lr("Mulai", fmtDate(b.startDate));
+    t.lr("Selesai", fmtDate(b.endDate));
+    t.lr(`${b.days} hari x ${rp(b.pricePerDay)}`, rp(b.total));
+    if (b.note) { t.skip(1); t.text(`Catatan: ${b.note}`); }
+    t.rule();
+    t.lr("Total", rp(b.total), true);
+    t.lr("Dibayar", rp(b.paid));
+    t.lr(state === "lunas" ? "Status bayar" : "Sisa tagihan", state === "lunas" ? "LUNAS" : rp(left), true);
+    if (s.footer) { t.skip(3); t.center(s.footer, 8); }
+  }, `nota-${notaNo(b)}.pdf`);
 }

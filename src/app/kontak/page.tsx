@@ -21,6 +21,7 @@ export default function Kontak() {
 
           <dl className="mt-8 space-y-5 text-base">
             <div><dt className="font-bold">Email</dt><dd className="mt-1"><a className="font-semibold text-link underline underline-offset-4" href={`mailto:${SITE.email}`}>{SITE.email}</a></dd></div>
+            {SITE.phone && <div><dt className="font-bold">Telepon / WhatsApp</dt><dd className="mt-1"><a className="font-semibold text-link underline underline-offset-4" href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`}>{SITE.phone}</a></dd></div>}
             <div><dt className="font-bold">Dikelola oleh</dt><dd className="mt-1 leading-7 text-muted">{SITE.operator}<br />{SITE.address}</dd></div>
           </dl>
         </div>

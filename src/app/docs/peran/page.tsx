@@ -10,10 +10,13 @@ export default function Peran() {
           <tr><td>Admin</td><td>Melihat dan menonaktifkan toko</td><td>Semua toko</td></tr>
           <tr><td>Kepala toko</td><td>Menambah cabang, menambah kepala cabang, kasir, dan gudang, mengelola stok, kasir (buka–tutup), melihat transaksi dan keuangan, mengatur struk</td><td>Seluruh cabang di tokonya</td></tr>
           <tr><td>Kepala cabang</td><td>Menambah kasir dan gudang, mengelola stok, kasir (buka–tutup), melihat transaksi dan keuangan</td><td>Cabangnya</td></tr>
-          <tr><td>Kasir</td><td>Membuka dan menutup kasir, membuat transaksi, mencetak struk dan PDF</td><td>Cabangnya</td></tr>
+          <tr><td>Kasir</td><td>Membuka dan menutup kasir, membuat transaksi, membuat booking dan sewa serta mencetak nota, mencetak struk dan PDF</td><td>Cabangnya</td></tr>
           <tr><td>Gudang</td><td>Menambah produk, mengubah harga dan stok</td><td>Cabangnya</td></tr>
         </tbody>
       </table>
+      <h2>Password, PIN, dan perangkat</h2>
+      <p>Semua peran bisa mengganti password, PIN, dan nomor telepon sendiri di Pengaturan. Satu akun hanya bisa masuk di satu perangkat dalam satu waktu. Kepala toko dan kepala cabang bisa mengeluarkan anggota timnya dari perangkat mana pun. Selengkapnya di <a href="/docs/keamanan">Keamanan akun dan password</a>.</p>
+
       <h2>Toko dinonaktifkan</h2>
       <p>Jika admin menonaktifkan sebuah toko, semua akun di toko itu tidak bisa masuk sampai toko diaktifkan lagi. Data tidak dihapus.</p>
     </>

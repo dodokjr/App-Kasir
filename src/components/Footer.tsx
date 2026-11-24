@@ -5,9 +5,8 @@ import { SITE } from "@/lib/site";
 
 type L = readonly (readonly [string, string])[];
 
-const APLIKASI: L = [
-  ["/register", "Daftarkan toko"],
-  ["/login", "Masuk"],
+const APLIKASI = (loggedIn: boolean): L => [
+  ...(loggedIn ? ([["/dashboard", "Masuk ke dashboard"]] as const) : ([["/register", "Daftarkan toko"], ["/login", "Masuk"]] as const)),
   ["/#fitur", "Fitur"],
   ["/#cara-mulai", "Cara mulai"],
 ];
@@ -15,6 +14,7 @@ const BANTUAN: L = [
   ["/docs", "Panduan"],
   ["/docs/jenis-usaha", "Jenis usaha dan pembayaran"],
   ["/docs/instalasi", "Instalasi"],
+  ["/docs/keamanan", "Keamanan akun"],
   ["/kontak", "Hubungi kami"],
 ];
 const ATURAN: L = [
@@ -44,7 +44,7 @@ export default function Footer({ loggedIn }: { loggedIn: boolean }) {
               href={loggedIn ? "/dashboard" : "/register"}
               className="group inline-flex w-full items-center justify-center rounded-xl bg-white px-6 py-3.5 text-base font-bold text-accent shadow-lg transition duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:translate-y-0 active:scale-[.98] sm:w-auto"
             >
-              {loggedIn ? "Buka dashboard" : "Daftarkan toko"}
+              {loggedIn ? "Masuk ke dashboard" : "Daftarkan toko"}
               <span
                 aria-hidden="true"
                 className="ml-2 inline-block transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
@@ -65,7 +65,7 @@ export default function Footer({ loggedIn }: { loggedIn: boolean }) {
               Aplikasi kasir untuk warung makan, toko barang, dan toko sembako.
             </p>
           </div>
-          <Col title="Aplikasi" links={APLIKASI} />
+          <Col title="Aplikasi" links={APLIKASI(loggedIn)} />
           <Col title="Bantuan" links={BANTUAN} />
           <Col title="Aturan" links={ATURAN} />
         </div>

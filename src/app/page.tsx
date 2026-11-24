@@ -123,6 +123,9 @@ const FAQ = [
   ["Bagaimana dengan PPN?", "Kepala toko yang menentukan. PPN bisa dinyalakan atau dimatikan, tarifnya bisa 11%, 12%, atau angka lain, dan bisa ditambahkan di atas harga atau sudah termasuk di harga. Soal kewajiban pajak, tanyakan ke konsultan pajak."],
   ["Printer apa yang didukung?", "Printer thermal 58 mm atau 80 mm lewat tombol Cetak di browser. Tanpa printer, struk bisa disimpan sebagai PDF."],
   ["Berapa banyak cabang yang bisa dibuat?", "Tidak ada batas di aplikasi. Setiap cabang punya stok, kasir, dan riwayat transaksinya sendiri."],
+  ["Apakah booking dan sewa bisa dicetak notanya?", "Bisa. Setiap booking, sewa, dan rental punya tombol Cetak nota yang menampilkan pelanggan, unit, tanggal, total, jumlah dibayar, sisa tagihan atau LUNAS, dan nama kasir. Nota bisa dicetak ke printer thermal atau diunduh sebagai PDF. Keuntungan dan modal tidak ikut tercetak."],
+  ["Bisakah satu akun dipakai di dua perangkat?", "Tidak bersamaan. Selama akun masih masuk di satu perangkat, perangkat lain baru bisa masuk setelah akun itu keluar. Ini mencegah akun dipakai bergantian tanpa sepengetahuan pemiliknya."],
+  ["Bagaimana kalau lupa password?", "Di halaman masuk klik Lupa password, masukkan email, isi kode 6 digit yang dikirim ke email itu, lalu buat password baru. Semua perangkat yang sedang masuk ikut dikeluarkan."],
   ["Apakah cocok untuk toko besar?", "Cocok untuk toko kecil sampai menengah. Google Sheets membatasi jumlah permintaan per menit, dan dua kasir yang menjual produk yang sama di detik yang sama bisa membuat stok meleset."],
 ] as const;
 
@@ -130,6 +133,11 @@ const d = (ms: number) => ({ ["--d" as string]: `${ms}ms` });
 
 export default async function Home() {
   const s = await getSession({ check: false }).catch(() => null);
+
+  // DIUBAH: sudah ada user di perangkat -> tombol daftar diganti "Masuk ke dashboard"
+  const cta = s
+    ? { href: "/dashboard", label: "Masuk ke dashboard" }
+    : { href: "/register", label: "Daftarkan toko" };
 
   return (
     <SiteShell>
@@ -156,7 +164,8 @@ export default async function Home() {
             </p>
 
             <div className="fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={d(540)}>
-              <Link href="/register" className="btn-primary btn-lg justify-center transition-transform duration-150 active:scale-[0.98]">Daftarkan toko</Link>
+              {/* DIUBAH: Daftarkan toko -> Masuk ke dashboard bila sudah ada sesi */}
+              <Link href={cta.href} className="btn-primary btn-lg justify-center transition-transform duration-150 active:scale-[0.98]">{cta.label}</Link>
               <HeroGhostLink href="/docs" className="btn-lg justify-center active:scale-[0.98]">Lihat cara pakainya</HeroGhostLink>
             </div>
 
@@ -255,6 +264,28 @@ export default async function Home() {
                 <TutupKasirDemo />
               </div>
             </Reveal>
+
+            <Reveal delay={0} className="md:col-span-1 lg:col-span-3">
+              <div className={`${CARD} rounded-2xl`}>
+                <Icon><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /><path d="M8 15h5" /></Icon>
+                <h3 className="mt-4 text-xl font-bold tracking-tight">Booking, sewa, dan rental lengkap dengan nota</h3>
+                <p className="mt-2 leading-7 text-muted">Kamar, lapangan, mobil, motor, atau alat: jadwal per unit terlihat di kalender, bentrok tanggal ditolak, dan cicilan atau pelunasan dicatat. Setiap booking bisa dicetak sebagai nota 58 atau 80 mm, atau diunduh sebagai PDF, lengkap dengan nama kasir yang melayani.</p>
+                <ul className="mt-4 flex flex-wrap gap-2 text-sm font-semibold">
+                  {["Nota cetak dan PDF", "Nama kasir tercatat", "Sisa tagihan atau LUNAS"].map((t) => (
+                    <li key={t} className="rounded-full border border-line px-3 py-1">{t}</li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+
+            <Reveal delay={90} className="md:col-span-1 lg:col-span-3">
+              <div className={`${CARD} rounded-2xl`}>
+                <Icon><path d="M12 3 4 6v6c0 4.5 3.2 7.8 8 9 4.8-1.2 8-4.5 8-9V6l-8-3Z" /><path d="m9 12 2 2 4-4" /></Icon>
+                <h3 className="mt-4 text-xl font-bold tracking-tight">Akun lebih aman</h3>
+                <p className="mt-2 leading-7 text-muted">Satu akun hanya bisa masuk di satu perangkat sampai pemiliknya keluar, jadi akun tidak bisa dipakai bergantian diam-diam. Lupa password? Buat yang baru lewat kode di email. Ganti password dan nomor telepon kapan saja di Pengaturan.</p>
+                <p className="mt-4"><Link href="/docs/keamanan" className="font-semibold text-link underline underline-offset-4">Baca panduan keamanan</Link></p>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -276,7 +307,8 @@ export default async function Home() {
           <RevealTitle className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mulai dalam tiga langkah</RevealTitle>
           <Steps />
           <div className="mt-10">
-            <Link href="/register" className="btn-primary btn-lg w-full justify-center transition-transform duration-150 active:scale-[0.98] sm:w-auto">Daftarkan toko</Link>
+            {/* DIUBAH: ikut berganti ke "Masuk ke dashboard" bila sudah ada sesi */}
+            <Link href={cta.href} className="btn-primary btn-lg w-full justify-center transition-transform duration-150 active:scale-[0.98] sm:w-auto">{cta.label}</Link>
           </div>
         </div>
       </section>

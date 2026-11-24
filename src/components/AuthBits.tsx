@@ -37,6 +37,9 @@ const CSS = `
 @keyframes auth-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
 .auth-pop{animation:auth-pop .3s ease-out both}
 .input{transition:border-color .2s ease,box-shadow .2s ease}
+.auth-form .input{padding-top:.72rem;padding-bottom:.72rem;padding-left:.9rem;font-size:.95rem;border-radius:.8rem} /* DIUBAH */
+.auth-form .btn-primary{padding-top:.8rem;padding-bottom:.8rem;border-radius:.8rem;font-weight:600} /* DIUBAH */
+.auth-form .btn-primary:disabled{filter:saturate(.6)} /* DIUBAH */
 .input[aria-invalid="true"],.auth-pw[data-invalid="true"] input{border-color:#ef4444;box-shadow:0 0 0 3px rgb(239 68 68 / .15)}
 .input[data-ok="true"]{border-color:#10b981}
 .auth-press{transition:transform .15s ease,box-shadow .2s ease,opacity .2s ease}
@@ -171,6 +174,7 @@ export function SubmitButton({
   return (
     <button
       type="submit"
+      suppressHydrationWarning
       disabled={busy || done}
       className="btn-primary auth-press flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
     >

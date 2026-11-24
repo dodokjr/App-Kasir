@@ -19,11 +19,12 @@ export default function Privasi() {
         { id: "data-yang-dikumpulkan", title: "Data yang kami kumpulkan", body: (
           <>
             <ul>
-              <li><strong>Data akun:</strong> nama, alamat email, peran, dan password. Password disimpan hanya dalam bentuk hash (bcrypt), bukan teks asli.</li>
+              <li><strong>Data akun:</strong> nama, alamat email, nomor telepon (opsional, diisi sendiri di Pengaturan), peran, dan password. Password disimpan hanya dalam bentuk hash (bcrypt), bukan teks asli.</li>
               <li><strong>Data toko:</strong> nama toko, jenis usaha, nama cabang, nama jalan cabang, serta titik lokasi (koordinat) cabang bila Anda mengaturnya di halaman Peta toko, dan target penjualan bulanan yang ditetapkan kepala toko.</li>
               <li><strong>Data usaha:</strong> produk (termasuk foto produk berukuran kecil yang Anda unggah), satuan, harga, stok, transaksi beserta nama kasir, waktu, metode pembayaran, nomor referensi pembayaran yang diisi kasir, PPN, dan jumlah pembayaran, catatan buka dan tutup kasir (modal awal, uang yang dihitung, selisih, dan catatan), pengeluaran toko, catatan pencairan (setoran) hasil penjualan ke rekening (tanggal, nama bank, keterangan rekening yang Anda isi, dan nominal; sebaiknya tidak memuat nomor rekening lengkap), serta pengaturan struk dan PPN (nama, alamat, telepon toko, tarif).</li>
               <li><strong>Permintaan barang antar cabang:</strong> nama barang, jumlah diminta, dikirim, dan diterima, nomor resi atau nomor pengiriman, nama pengaju dan pengirim, serta catatan dan balasan di tiap permintaan.</li>
               <li><strong>Data pesanan (toko F&amp;B):</strong> nomor meja, nomor pesanan, nama customer, dan catatan menu, jika diisi oleh kasir.</li>
+              <li><strong>Keamanan masuk:</strong> penanda sesi aktif (agar satu akun hanya masuk di satu perangkat), kode OTP dalam bentuk hash yang berlaku sebentar, jumlah salah masuk, serta alamat IP, lokasi perkiraan, dan perangkat saat email peringatan percobaan masuk dikirim.</li>
               <li><strong>Status aktivitas akun:</strong> waktu terakhir akun terhubung dan halaman aplikasi yang sedang dibuka, supaya kepala toko dan kepala cabang bisa melihat kasir online atau offline.</li>
               <li><strong>Pesan kontak:</strong> nama, email, subjek, dan isi pesan yang Anda kirim lewat halaman Kontak.</li>
             </ul>

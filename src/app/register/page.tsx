@@ -160,6 +160,7 @@ export default function Register() {
       <Toast title="Registrasi gagal" message={serverErr} onClose={() => setServerErr("")} />
 
       <AuthShell
+        step={{ at: step === "form" ? 1 : step === "otp" ? 2 : 3, of: 3 }}
         title={step === "form" ? "Daftarkan toko Anda" : step === "otp" ? "Cek email Anda" : "Buat PIN Anda"}
         subtitle={
           step === "form" ? "Buat akun kepala toko dan mulai berjualan hari ini."
@@ -217,6 +218,7 @@ export default function Register() {
 
           <Field id="name" label="Nama Anda" error={shown("name")} ok={touched.name && !errs.name} delay={40}>
             <input
+              suppressHydrationWarning
               id="name"
               name="name"
               type="text"
@@ -252,6 +254,7 @@ export default function Register() {
             }
           >
             <input
+              suppressHydrationWarning
               id="email"
               name="email"
               type="email"
@@ -334,6 +337,7 @@ export default function Register() {
 
           <Field id="store" label="Nama toko" error={shown("storeName")} ok={touched.storeName && !errs.storeName} delay={200}>
             <input
+              suppressHydrationWarning
               id="store"
               name="storeName"
               type="text"

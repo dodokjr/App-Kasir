@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { handle, HttpError } from "@/lib/api";
 import { all } from "@/lib/sheets";
+import { assertFreeToLogin } from "@/lib/auth";
 import { readStage, signStage, assertNotLocked, failAttempt } from "@/lib/authflow";
 
 // Langkah 2: cek password
@@ -16,5 +17,6 @@ export const POST = handle(async (req) => {
     const stRow = (await all("stores")).find((s) => s.id === u.storeId);
     if (stRow?.active === "FALSE") throw new HttpError(403, "Toko dinonaktifkan. Hubungi admin");
   }
+  await assertFreeToLogin(u); // password benar, tapi akun sedang dipakai di perangkat lain
   return { ok: true, token: await signStage({ step: "human", uid: u.id, email: u.email }, "10m") };
 });

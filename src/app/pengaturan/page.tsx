@@ -8,6 +8,7 @@ import { BUSINESS_TYPES, DISCOUNT_TYPES, discountLabel, type DiscountPreset, typ
 import { api, rp } from "@/lib/client";
 import type { Me } from "@/lib/types";
 import PinChangeSection from "@/components/PinChangeSection";
+import { PhoneSection, PasswordChangeSection, HelpSection } from "@/components/AccountSection";
 
 
 function Check({ id, label, v, on, disabled }: { id: string; label: string; v: boolean; on: (b: boolean) => void; disabled: boolean }) {
@@ -227,7 +228,10 @@ function Settings({ me }: { me: Me }) {
         <div className="max-w-sm"><ThemePanel /></div>
       </section>
 
+      <PhoneSection />
+      <PasswordChangeSection />
       <PinChangeSection />
+      <HelpSection />
 
       {owner && <BusinessSection type={biz} onChange={setBiz} />}
       {owner && <TaxSection tax={tax} onSaved={setTax} />}

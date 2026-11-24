@@ -1241,7 +1241,7 @@ export function MobileCta({ loggedIn }: { loggedIn: boolean }) {
         tabIndex={show ? 0 : -1}
         className="btn-primary btn-lg w-full justify-center"
       >
-        {loggedIn ? "Buka dashboard" : "Daftarkan toko"}
+        {loggedIn ? "Masuk ke dashboard" : "Daftarkan toko"}
       </Link>
     </div>
   );

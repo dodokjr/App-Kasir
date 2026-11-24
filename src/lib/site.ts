@@ -2,9 +2,10 @@
 export const SITE = {
   name: "Galaxy Kasir",
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "halo@contoh.com",
+  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "",
   operator: process.env.NEXT_PUBLIC_OPERATOR_NAME || "Pengelola Kasir Toko",
   address: process.env.NEXT_PUBLIC_OPERATOR_ADDRESS || "Indonesia",
-  updated: "5 November 2026",
+  updated: "24 November 2026",
   desain: "mfikria",
   desainUrl: "https://mfikria.vercel.app"
 };

@@ -1,12 +1,13 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Shell from "@/components/Shell";
 import BranchSelect from "@/components/BranchSelect";
+import BookingNotaModal from "@/components/BookingNota";
 import { useBranch } from "@/lib/useBranch";
-import { api, rp, wibDay } from "@/lib/client";
+import { api, rp, tgl, wibDay } from "@/lib/client";
 import {
   KINDS, PAY_LABEL, STATUSES, UNIT_TYPES, calcProfit, calcRental, fmtRate, fmtDate, fmtRange, kindLabel, occupies, overlaps, payState, stateLabel, statusLabel, unitState, unitTypeLabel,
-  type Booking, type BookingStatus, type RentalItem, type RentalKind, type UnitType,
+  type Booking, type BookingStatus, type NotaInfo, type RentalItem, type RentalKind, type UnitType,
 } from "@/lib/rental";
 import type { Me } from "@/lib/types";
 
@@ -36,12 +37,17 @@ const firstDow = (m: string) => (new Date(m + "-01T00:00:00Z").getUTCDay() + 6) 
 const digits = (s: string) => s.replace(/\D/g, "");
 const num = (s: string) => Number(digits(s) || 0);
 
+// Data toko dan cabang untuk kepala nota (diisi halaman Sewa)
+const NotaCtx = createContext<NotaInfo>({ storeName: "", branchName: "", street: "" });
+
 /* ---------- Kartu satu booking, dengan aksi ---------- */
 function BookingCard({ b, today, canAct, onDone, onError }: { b: Booking; today: string; canAct: boolean; onDone: () => void; onError: (m: string) => void }) {
   const [mode, setMode] = useState<null | "pay" | "extend">(null);
   const [amount, setAmount] = useState("");
   const [end, setEnd] = useState(b.endDate);
   const [busy, setBusy] = useState(false);
+  const [nota, setNota] = useState(false);
+  const notaInfo = useContext(NotaCtx);
   const left = b.total - b.paid;
   const ps = payState(b.paid, b.total);
   const late = b.status === "active" && b.endDate < today;
@@ -68,6 +74,7 @@ function BookingCard({ b, today, canAct, onDone, onError }: { b: Booking; today:
           </div>
           <p className="mt-1.5 font-semibold leading-tight">{b.itemName}</p>
           <p className="text-sm text-muted">{b.customerName}{b.phone ? ` · ${b.phone}` : ""}</p>
+          {b.createdByName && <p className="text-xs text-muted">Kasir: <span className="font-semibold text-ink">{b.createdByName}</span> · dibuat {tgl(b.createdAt)}</p>}
         </div>
         <div className="text-right">
           <p className="font-mono text-lg font-bold">{rp(b.total)}</p>
@@ -83,6 +90,11 @@ function BookingCard({ b, today, canAct, onDone, onError }: { b: Booking; today:
       </div>
       <p className="text-sm text-muted">Keuntungan {fmtRate(b.profitRate)}%: <strong className="text-ink">{rp(calcProfit(b.total, b.profitRate).profit)}</strong> · modal/biaya {rp(calcProfit(b.total, b.profitRate).cost)}</p>
       {b.note && <p className="rounded-lg bg-paper px-3 py-2 text-sm text-muted">{b.note}</p>}
+
+      {b.status !== "cancelled" && (
+        <div><button className="btn-ghost" onClick={() => setNota(true)}>Cetak nota</button></div>
+      )}
+      {nota && <BookingNotaModal b={b} info={notaInfo} onClose={() => setNota(false)} />}
 
       {canAct && (occupies(b.status) || (b.status === "returned" && left > 0)) ? (
         <div className="flex flex-wrap gap-2">
@@ -511,14 +523,22 @@ function Sewa({ me }: { me: Me }) {
   const list = useMemo(() => {
     const k = q.trim().toLowerCase();
     return bookings
-      .filter((b) => (fStatus === "all" || b.status === fStatus) && (fKind === "all" || b.kind === fKind) && (!k || `${b.customerName} ${b.itemName} ${b.phone}`.toLowerCase().includes(k)))
+      .filter((b) => (fStatus === "all" || b.status === fStatus) && (fKind === "all" || b.kind === fKind) && (!k || `${b.customerName} ${b.itemName} ${b.phone} ${b.createdByName}`.toLowerCase().includes(k)))
       .sort((a, b) => b.startDate.localeCompare(a.startDate) || b.createdAt.localeCompare(a.createdAt));
   }, [bookings, fStatus, fKind, q]);
 
   const done = () => { setErr(""); load(); };
   const openForm = (d: string) => { setForm(d); setTab("jadwal"); };
 
+  const curBranch = branches.find((b) => b.id === branchId);
+  const notaInfo: NotaInfo = {
+    storeName: me.store?.name ?? "",
+    branchName: (owner ? curBranch?.name : me.branch?.name) ?? "",
+    street: (owner ? curBranch?.street : me.branch?.street) ?? "",
+  };
+
   return (
+    <NotaCtx.Provider value={notaInfo}>
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -556,7 +576,7 @@ function Sewa({ me }: { me: Me }) {
       {tab === "daftar" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <input type="text" className="input min-w-[220px] flex-1" placeholder="Cari nama penyewa, unit, atau telepon" aria-label="Cari booking" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input type="text" className="input min-w-[220px] flex-1" placeholder="Cari penyewa, unit, telepon, atau kasir" aria-label="Cari booking" value={q} onChange={(e) => setQ(e.target.value)} />
             <select className="input w-auto" aria-label="Saring jenis" value={fKind} onChange={(e) => setFKind(e.target.value as typeof fKind)}>
               <option value="all">Semua jenis</option>{KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
             </select>
@@ -576,6 +596,7 @@ function Sewa({ me }: { me: Me }) {
 
       {tab === "unit" && <Units items={items} bookings={bookings} today={today} branchId={branchId} canManage={canManage} onDone={done} onError={setErr} />}
     </div>
+    </NotaCtx.Provider>
   );
 }
 

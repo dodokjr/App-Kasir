@@ -29,6 +29,10 @@ export default function BookingSewa() {
         <p><strong>Cara hitung hari:</strong> tanggal mulai dan tanggal selesai sama-sama dihitung. Tanggal 10 sampai 12 berarti 3 hari. Total = jumlah hari × harga per hari.</p>
       </blockquote>
 
+      <h2 id="nota">Cetak nota</h2>
+      <p>Setiap booking, sewa, dan rental yang belum dibatalkan punya tombol <code>Cetak nota</code> di kartunya. Nota memuat nomor nota, data pelanggan, unit, tanggal mulai dan selesai, total, jumlah dibayar, dan sisa tagihan atau tulisan LUNAS. Nama toko, alamat, telepon, teks penutup, dan lebar kertas (58 atau 80 mm) mengikuti pengaturan struk di halaman Pengaturan. Pilih <code>Cetak nota</code> untuk printer, atau <code>Unduh PDF</code> untuk dikirim ke pelanggan. Keuntungan dan modal tidak pernah ikut tercetak. Cetak ulang setelah mencatat pembayaran supaya nota menampilkan sisa tagihan terbaru.</p>
+      <p>Setiap booking mencatat <strong>kasir</strong> yang membuatnya. Nama kasir tampil di kartu booking dan tercetak di nota, serta bisa dipakai untuk mencari di tab Daftar.</p>
+
       <h2>Skema keuntungan 15%</h2>
       <p>Setiap unit punya persen keuntungan, bawaannya <strong>15%</strong>. Dari total sewa, 15% dihitung sebagai keuntungan dan sisanya sebagai modal atau biaya. Contoh: sewa 3 hari × Rp 350.000 = Rp 1.050.000, keuntungannya Rp 157.500 dan modalnya Rp 892.500. Harga yang dibayar penyewa tidak berubah.</p>
       <ul>

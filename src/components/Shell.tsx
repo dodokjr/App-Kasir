@@ -237,7 +237,8 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
         } else if ((e as { status?: number }).status === 401) {
           clearMe();
           setMe(null);
-          router.replace("/login");
+          // DIUBAH: cookie sudah dihapus server; pindah penuh agar proxy menilai ulang (sebelumnya router.replace)
+          window.location.replace("/login");
         } else {
           setLoadErr((e as Error).message || "Gagal memuat. Coba lagi.");
         }
@@ -405,7 +406,7 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
     }
     await api("/api/auth/logout", { method: "POST" }).catch(() => {});
     clearMe();
-    router.replace("/login");
+    window.location.replace("/login"); // DIUBAH: sebelumnya router.replace("/login")
   };
 
   // ====================================================

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSession, type Role, type Session } from "./auth";
+import { cookies } from "next/headers";
+import { getSession, destroySession, type Role, type Session } from "./auth";
+import { SESSION_COOKIE } from "./authRoutes";
 import { isQuotaError, type Row } from "./sheets";
 
 export class HttpError extends Error {
@@ -8,7 +10,12 @@ export class HttpError extends Error {
 
 export async function need(roles?: Role[]): Promise<Session> {
   const s = await getSession();
-  if (!s) throw new HttpError(401, "Silakan login dulu");
+  if (!s) {
+    // Cookie ada tetapi sudah tidak sah (token habis, akun di-kick/dihapus, sesi digantikan): hapus supaya proxy
+    // tidak terus mengalihkan /login ke /dashboard. sessionExpired memberi tahu client untuk kembali ke /login.
+    if ((await cookies()).has(SESSION_COOKIE)) await destroySession().catch(() => {});
+    throw new HttpError(401, "Silakan login dulu", { sessionExpired: true });
+  }
   if (roles && !roles.includes(s.role)) throw new HttpError(403, "Akses ditolak");
   return s;
 }

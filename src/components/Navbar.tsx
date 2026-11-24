@@ -199,7 +199,7 @@ export default function Navbar({ loggedIn, siteName }: { loggedIn: boolean; site
             <ThemeToggle />
             <div className="hidden items-center gap-2 md:flex">
               {loggedIn ? (
-                <Link href="/dashboard" className="btn-primary">Buka dashboard</Link>
+                <Link href="/dashboard" className="btn-primary">Masuk ke dashboard</Link>
               ) : (
                 <>
                   <Link href="/login" className="btn-ghost">Masuk</Link>
@@ -268,7 +268,7 @@ export default function Navbar({ loggedIn, siteName }: { loggedIn: boolean; site
                 style={{ transitionDelay: open ? `${80 + NAV.length * 45}ms` : "0ms" }}
               >
                 {loggedIn ? (
-                  <Link href="/dashboard" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)} className="btn-primary btn-lg">Buka dashboard</Link>
+                  <Link href="/dashboard" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)} className="btn-primary btn-lg">Masuk ke dashboard</Link>
                 ) : (
                   <>
                     <Link href="/register" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)} className="btn-primary btn-lg">Daftarkan toko</Link>

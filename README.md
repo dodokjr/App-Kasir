@@ -58,3 +58,8 @@ Google Sheets membatasi sekitar 60 permintaan baca per menit. Aplikasi menjagany
 
 ## Halaman publik
 `/` pengenalan, `/docs` panduan, `/privasi`, `/syarat`, `/kontak`. Isi `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_OPERATOR_NAME`, dan `NEXT_PUBLIC_OPERATOR_ADDRESS` di `.env.local`. Pesan dari halaman Kontak masuk ke tab `messages`. Teks privasi dan syarat adalah template; minta ahli hukum meninjaunya sebelum dipakai untuk bisnis nyata.
+## Keamanan akun (ringkas)
+- **Lupa password**: `/lupa-password` (OTP 6 digit lewat EmailJS, memakai template `EMAILJS_TEMPLATE_OTP`). Reset mengeluarkan semua perangkat.
+- **Ganti password / nomor telepon**: menu Pengaturan.
+- **Satu akun satu perangkat**: selama akun masih login di satu perangkat, perangkat lain ditolak sampai logout (atau sesi 12 jam habis, di-kick, atau password direset). Tab `users` otomatis mendapat kolom baru `phone`, `sessionId`, `sessionExp`.
+- Panduan: `/docs/keamanan`. Nomor telepon pengelola: `NEXT_PUBLIC_CONTACT_PHONE`.
