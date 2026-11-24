@@ -8,22 +8,44 @@ async function send(templateEnv: string, params: Record<string, string>) {
   const template = process.env[templateEnv];
   if (!service || !pub || !template) throw new HttpError(500, "EmailJS belum dikonfigurasi (cek .env.local)");
 
-  const r = await fetch(URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      service_id: service,
-      template_id: template,
-      user_id: pub,
-      accessToken: process.env.EMAILJS_PRIVATE_KEY || undefined,
-      template_params: params,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!r.ok) {
-    console.error("[emailjs]", r.status, await r.text().catch(() => ""));
-    throw new HttpError(502, "Gagal mengirim email. Coba lagi sebentar lagi");
+  let r: Response;
+  try {
+    r = await fetch(URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: service,
+        template_id: template,
+        user_id: pub,
+        accessToken: process.env.EMAILJS_PRIVATE_KEY || undefined,
+        template_params: params,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (e) {
+    console.error("[emailjs] tidak bisa menghubungi EmailJS:", e);
+    throw new HttpError(502, fail("Server tidak bisa menghubungi EmailJS (cek internet)"));
   }
+  if (!r.ok) {
+    const text = (await r.text().catch(() => "")).trim();
+    console.error("[emailjs]", r.status, text);
+    throw new HttpError(502, fail(hint(r.status, text) || `EmailJS membalas ${r.status}: ${text.slice(0, 160)}`));
+  }
+}
+
+// Di produksi pengguna hanya melihat pesan umum. Saat development, penyebab sebenarnya ikut ditampilkan
+const fail = (why: string) => (process.env.NODE_ENV === "production" ? "Gagal mengirim email. Coba lagi sebentar lagi" : `Gagal mengirim email: ${why}`);
+
+function hint(status: number, t: string) {
+  if (/non-browser/i.test(t)) return "Aktifkan 'Allow EmailJS API for non-browser applications' di EmailJS > Account > Security";
+  if (/private key|access ?token/i.test(t)) return "EMAILJS_PRIVATE_KEY salah (salin ulang dari Account > General)";
+  if (/public key|user_id/i.test(t)) return "EMAILJS_PUBLIC_KEY salah (salin ulang dari Account > General)";
+  if (/template/i.test(t) && /not found|invalid|ID/i.test(t)) return "EMAILJS_TEMPLATE_OTP / _ALERT salah atau template tidak ada";
+  if (/service/i.test(t) && /not found|invalid|ID/i.test(t)) return "EMAILJS_SERVICE_ID salah atau layanan email belum tersambung";
+  if (/recipient|to_email|address is empty/i.test(t)) return "Kolom To Email di template harus diisi {{to_email}}";
+  if (/gmail|invalid_grant|authenticat|insufficient/i.test(t)) return "Layanan email (mis. Gmail) perlu disambungkan ulang di EmailJS > Email Services";
+  if (status === 429) return "Kuota atau batas kirim EmailJS tercapai, coba lagi nanti";
+  return "";
 }
 
 /** Template OTP memakai: {{to_email}}, {{to_name}}, {{passcode}}, {{time}} (jam kedaluwarsa, WIB), {{expires_min}}, {{app_name}} */
