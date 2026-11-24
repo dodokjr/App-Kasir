@@ -2,9 +2,17 @@ import { HttpError } from "./api";
 
 const URL = "https://api.emailjs.com/api/v1.0/email/send";
 
-async function send(templateEnv: string, params: Record<string, string>) {
-  const service = process.env.EMAILJS_SERVICE_ID;
-  const pub = process.env.EMAILJS_PUBLIC_KEY;
+// dev = true: pakai EmailJS khusus developer (EMAILJS_DEV_*). Service/kunci yang tidak diisi memakai EmailJS bawaan aplikasi
+const creds = (dev: boolean) => {
+  const g = (k: string) => (dev ? process.env[`EMAILJS_DEV_${k}`] : "") || process.env[`EMAILJS_${k}`];
+  return { service: g("SERVICE_ID"), pub: g("PUBLIC_KEY"), priv: g("PRIVATE_KEY") };
+};
+
+/** EmailJS khusus developer sudah siap dipakai (template EMAILJS_DEV_TEMPLATE wajib diisi sendiri) */
+export const devMailReady = () => { const c = creds(true); return !!(c.service && c.pub && process.env.EMAILJS_DEV_TEMPLATE); };
+
+async function send(templateEnv: string, params: Record<string, string>, dev = false) {
+  const { service, pub, priv } = creds(dev);
   const template = process.env[templateEnv];
   if (!service || !pub || !template) throw new HttpError(500, "EmailJS belum dikonfigurasi (cek .env.local)");
 
@@ -17,7 +25,7 @@ async function send(templateEnv: string, params: Record<string, string>) {
         service_id: service,
         template_id: template,
         user_id: pub,
-        accessToken: process.env.EMAILJS_PRIVATE_KEY || undefined,
+        accessToken: priv || undefined,
         template_params: params,
       }),
       signal: AbortSignal.timeout(10_000),
@@ -61,3 +69,10 @@ export const sendAlertEmail = (to: string, name: string, p: { ip: string; locati
     to_email: to, to_name: name, ip_address: p.ip, location: p.location, device: p.device, app_name: "Galaxy Kasir",
     time: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "full", timeStyle: "long" }),
   });
+
+/** Template developer memakai: {{to_email}}, {{to_name}}, {{subject}}, {{message}}, {{from_name}}, {{time}}, {{app_name}} */
+export const sendDevEmail = (to: string, name: string, subject: string, message: string) =>
+  send("EMAILJS_DEV_TEMPLATE", {
+    to_email: to, to_name: name, subject, message, from_name: "Tim Galaxy Kasir", app_name: "Galaxy Kasir",
+    time: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "full", timeStyle: "short" }) + " WIB",
+  }, true);

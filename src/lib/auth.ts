@@ -33,7 +33,7 @@ export async function createSession(s: Session) {
   if (!u) throw new HttpError(401, "Akun tidak ditemukan");
   await assertFreeToLogin(u);
   const sid = crypto.randomUUID();
-  await update("users", s.uid, { sessionId: sid, sessionExp: String(Date.now() + SESSION_MS) });
+  await update("users", s.uid, { sessionId: sid, sessionExp: String(Date.now() + SESSION_MS), lastLogin: new Date().toISOString() });
   const token = await new SignJWT({ ...s, sid }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("12h").sign(key());
   (await cookies()).set("sid", token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 12,

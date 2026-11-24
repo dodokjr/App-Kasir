@@ -19,16 +19,22 @@ export async function beat(s: Session, page: string) {
   mem().set(s.uid, entry);
   if (t - entry.persisted < PERSIST_MS) return;
   entry.persisted = t;
-  const row = { id: s.uid, storeId: s.storeId, branchId: s.branchId, name: s.name, role: s.role, lastSeen: new Date(t).toISOString(), page: entry.page };
+  const row = { id: s.uid, storeId: s.storeId, branchId: s.branchId, name: s.name, role: s.role, lastSeen: new Date(t).toISOString(), page: entry.page, lastActive: new Date(t).toISOString() };
   const cur = (await all("presence")).find((r) => r.id === s.uid);
   if (cur) await update("presence", s.uid, row); else await add("presence", row);
 }
 
 // Saat keluar (logout) langsung dianggap offline, termasuk catatan di Sheets
+// lastActive tetap disimpan (dipakai dashboard developer untuk "terakhir aktif"), hanya lastSeen yang dikosongkan
 export async function leave(uid: string) {
+  const m = mem().get(uid);
   mem().delete(uid);
   const cur = (await all("presence")).find((r) => r.id === uid);
-  if (cur && cur.lastSeen) await update("presence", uid, { lastSeen: "" });
+  if (!cur) return;
+  const patch: Record<string, string> = {};
+  if (cur.lastSeen) patch.lastSeen = "";
+  if (m && m.at > (Date.parse(cur.lastActive) || 0)) patch.lastActive = new Date(m.at).toISOString();
+  if (Object.keys(patch).length) await update("presence", uid, patch);
 }
 
 /** Waktu terakhir terlihat (ms) dari memori atau Sheets, mana yang lebih baru */

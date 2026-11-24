@@ -12,7 +12,7 @@ export const GUEST_PAGES = ["/login", "/register", "/lupa-password"];
 /** Halaman yang wajib login */
 export const PROTECTED_PREFIXES = [
   "/dashboard", "/kasir", "/gudang", "/keuangan", "/pengaturan", "/monitor",
-  "/pesan", "/permintaan", "/target", "/peta", "/sewa",
+  "/pesan", "/permintaan", "/target", "/peta", "/sewa", "/developer",
 ];
 
 export const LOGIN_PATH = "/login";

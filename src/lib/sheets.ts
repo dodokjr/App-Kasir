@@ -3,7 +3,7 @@ import { google } from "googleapis";
 export const SCHEMA = {
   stores: ["id", "name", "active", "createdAt", "businessType", "ppnEnabled", "ppnRate", "ppnMode"],
   branches: ["id", "storeId", "name", "street", "createdAt", "lat", "lng"],
-  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt", "pinHash", "kickedAt", "phone", "sessionId", "sessionExp"],
+  users: ["id", "storeId", "branchId", "name", "email", "passwordHash", "role", "active", "createdAt", "pinHash", "kickedAt", "phone", "sessionId", "sessionExp", "lastLogin"],
   products: ["id", "storeId", "branchId", "sku", "name", "price", "stock", "createdAt", "unit", "imageVer"],
   transactions: ["id", "invoice", "storeId", "branchId", "cashierId", "cashierName", "total", "paid", "change", "createdAt", "paymentKey", "paymentLabel", "paymentRef", "orderType", "tableNo", "customerName", "orderNo", "subtotal", "taxAmount", "taxRate", "taxMode"],
   transaction_items: ["id", "transactionId", "productId", "name", "price", "qty", "subtotal", "unit", "note"],
@@ -18,7 +18,7 @@ export const SCHEMA = {
   stock_request_notes: ["id", "requestId", "storeId", "authorId", "authorName", "authorRole", "text", "createdAt"],
   targets: ["id", "storeId", "branchId", "month", "amount", "updatedById", "updatedByName", "updatedAt"],
   payment_methods: ["id", "storeId", "key", "label", "group", "active", "createdAt"],
-  presence: ["id", "storeId", "branchId", "name", "role", "lastSeen", "page"],
+  presence: ["id", "storeId", "branchId", "name", "role", "lastSeen", "page", "lastActive"],
   // TABEL BARU: preset diskon (persen / nominal) per toko
   discounts: ["id", "storeId", "name", "type", "value", "minSubtotal", "validFrom", "validTo", "active", "createdAt"],
   // TABEL BARU: unit yang bisa dibooking / disewa / dirental, dengan harga per hari (per cabang)
@@ -28,6 +28,8 @@ export const SCHEMA = {
   // TABEL BARU: status autentikasi (OTP pendaftaran + penghitung gagal login).
   // kind "reg": satu pendaftaran menunggu OTP (phase = jumlah kirim ulang). kind "lock": penghitung gagal per email (phase = tahap pembekuan)
   auth_state: ["id", "kind", "key", "hash", "data", "attempts", "phase", "lockUntil", "expiresAt", "sentAt"],
+  // TABEL BARU: log kunjungan website (diisi /api/traffic, dibaca dashboard developer). Tanpa IP; visitor = ID acak dari browser
+  traffic: ["id", "at", "path", "visitor", "referrer", "device"],
 } as const;
 
 export type SheetName = keyof typeof SCHEMA;
@@ -220,4 +222,49 @@ export async function remove(name: SheetName, id: string) {
       requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: i + 1, endIndex: i + 2 } } }] },
     });
   } finally { touch(name); }
+}
+
+
+/**
+ * Hapus banyak baris dari banyak tab sekaligus, hanya 3 permintaan ke Google (1 baca, 1 metadata, 1 hapus).
+ * Dipakai developer untuk menghapus akun dan toko beserta isinya.
+ * Sengaja TIDAK memakai cache: bila Google menolak karena kuota, penghapusan gagal (aman) dan bukan memakai data usang
+ * yang bisa membuat baris yang salah ikut terhapus. Hanya kolom A-D dibaca (id + kunci toko/relasi), jadi ringan
+ * walau tab menyimpan data besar seperti foto produk.
+ * `plan` menerima baris tiap tab dan mengembalikan id baris yang akan dihapus.
+ */
+export async function removeByIds(
+  tabs: SheetName[],
+  plan: (data: Record<string, Row[]>) => Record<string, Set<string>>,
+): Promise<Record<string, number>> {
+  await init();
+  const s = client();
+  const r = await s.spreadsheets.values.batchGet({ spreadsheetId: sid(), ranges: tabs.map((n) => `${n}!A:D`) });
+  const data: Record<string, Row[]> = {};
+  tabs.forEach((n, i) => { data[n] = parse(r.data.valueRanges?.[i]?.values); });
+  const ids = plan(data);
+
+  const hit = tabs
+    .map((n) => ({ n, idx: data[n].flatMap((row, i) => (row.id && ids[n]?.has(row.id) ? [i] : [])) }))
+    .filter((x) => x.idx.length);
+  if (!hit.length) return {};
+
+  const meta = await s.spreadsheets.get({ spreadsheetId: sid(), fields: "sheets.properties(sheetId,title)" });
+  const requests: object[] = [];
+  const counts: Record<string, number> = {};
+  for (const { n, idx } of hit) {
+    const sheetId = meta.data.sheets?.find((x) => x.properties?.title === n)?.properties?.sheetId;
+    if (sheetId == null) throw new Error(`Tab "${n}" tidak ditemukan`);
+    // Hapus dari bawah ke atas supaya nomor baris yang belum diproses tidak bergeser; baris berurutan digabung
+    const desc = [...idx].sort((a, b) => b - a);
+    let hi = desc[0], lo = desc[0];
+    const push = () => requests.push({ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: lo + 1, endIndex: hi + 2 } } });
+    for (const i of desc.slice(1)) { if (i === lo - 1) lo = i; else { push(); hi = lo = i; } }
+    push();
+    counts[n] = idx.length;
+  }
+  try {
+    await s.spreadsheets.batchUpdate({ spreadsheetId: sid(), requestBody: { requests } });
+  } finally { hit.forEach((x) => touch(x.n)); }
+  return counts;
 }

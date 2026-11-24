@@ -111,6 +111,12 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M21 12H9" />
     </>
   ),
+  developer: (
+    <>
+      <path d="m16 18 6-6-6-6" />
+      <path d="m8 6-6 6 6 6" />
+    </>
+  ),
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   tutup: (
     <>
@@ -385,6 +391,7 @@ export default function Shell({ children }: { children: (me: Me) => ReactNode })
           { href: "/monitor", t: "Pantau kasir", i: "monitor" },
         ]
       : []),
+    ...(role === "developer" ? [{ href: "/developer", t: "Panel developer", i: "developer" }] : []),
     ...(role === "developer" || role === "admin" ? [{ href: "/pesan", t: "Pesan", i: "pesan" }] : []),
     ...(role === "kepala_toko" ? [{ href: "/pengaturan", t: "Pengaturan", i: "pengaturan" }] : []),
   ];
